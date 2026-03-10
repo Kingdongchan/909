@@ -1,5 +1,5 @@
 // 버튼 클릭 시 실행될 함수
-async function getData() {
+async function getData(type) {
     const displayDiv = document.getElementById('display');
     displayDiv.innerText = '서버에 요청 중...';
     const url = type === 'success' ? '/api/hello' : '/api/fail';
