@@ -1,11 +1,20 @@
 // 버튼 클릭 시 실행될 함수
 async function getData() {
-    // 1. 서버에 요청 보내기 (포트 번호를 Flask와 맞추세요!)
-    const response = await fetch('http://localhost:3000/api/hello');
+    const displayDiv = document.getElementById('display');
+    displayDiv.innerText = '서버에 요청 중...';
     
-    // 2. 받은 JSON 데이터를 자바스크립트 객체로 변환
-    const data = await response.json();
-    
-    // 3. 화면에 출력
-    document.getElementById('display').innerText = data.message;
+    try {
+        // Flask 서버에 GET 요청
+        const response = await fetch('http://127.0.0.1:5000/api/hello');
+        
+        // JSON 데이터로 변환
+        const data = await response.json();
+        
+        // 화면에 표시
+        displayDiv.innerText = `서버 응답: ${data.message}`;
+        
+    } catch (error) {
+        displayDiv.innerText = `에러 발생: ${error.message}`;
+        console.error('Error:', error);
+    }
 }
