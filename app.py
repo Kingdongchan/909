@@ -1,5 +1,10 @@
 from flask import Flask, jsonify, render_template
 from flask_cors import CORS
+import os  
+from dotenv import load_dotenv  # ← 추가!
+
+
+load_dotenv()  # .env 파일 로드
 
 
 
@@ -8,7 +13,11 @@ CORS(app)
 
 @app.route('/')
 def home():
-    return render_template('login.html') 
+    return render_template(
+        'login.html',
+        supabase_url=os.getenv('SUPABASE_URL'),
+        supabase_key=os.getenv('SUPABASE_ANON_KEY')
+    )
 
 @app.route('/map')
 def map_page():
