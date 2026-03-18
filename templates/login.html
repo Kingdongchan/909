@@ -54,7 +54,7 @@
         const SUPABASE_ANON_KEY = "{{ supabase_key }}";
         
         // Supabase 클라이언트 생성
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log("✅ Supabase 연결 완료!");
 
         // 로그인 폼 이벤트
@@ -67,7 +67,7 @@
             console.log('로그인 시도:', email);
             
             // Supabase 로그인
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password
             });

@@ -17,7 +17,6 @@
 
     <!-- Penguin Mascot -->
     <div class="penguin-container">
-        <img src="/static/images/펭귄 이미지.jpg" alt="Penguin" class="penguin-img" onerror="this.src='https://via.placeholder.com/256?text=Penguin'">
         <div class="penguin-speech">
             <p>환영한다 친구!</p>
             <p>함께 대전을 탐험하자!</p>
@@ -51,63 +50,80 @@
     </div>
 
     <!-- Supabase 초기화 및 회원가입 로직 -->
+    <!-- Supabase 초기화 및 회원가입 로직 -->
     <script>
         // Flask에서 전달받은 환경변수
         const SUPABASE_URL = "{{ supabase_url }}";
         const SUPABASE_ANON_KEY = "{{ supabase_key }}";
         
         // Supabase 클라이언트 생성
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log("✅ Supabase 연결 완료!");
 
-        // 회원가입 폼 이벤트
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        // 페이지 로드 완료 후 실행
+        window.addEventListener('load', function() {
+            console.log("✅ 페이지 로드 완료!");
             
-            const email = document.getElementById('email').value;
-            const nickname = document.getElementById('nickname').value;
-            const password = document.getElementById('password').value;
-            const passwordConfirm = document.getElementById('passwordConfirm').value;
+            const form = document.getElementById('signupForm');
+            console.log("폼 찾기:", form);
             
-            // 비밀번호 확인
-            if (password !== passwordConfirm) {
-                alert('❌ 비밀번호가 일치하지 않습니다!');
+            if (!form) {
+                console.error("❌ signupForm을 찾을 수 없습니다!");
                 return;
             }
             
-            console.log('회원가입 시도:', email, nickname);
-            
-            try {
-                // 1. Supabase Auth에 회원가입
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email: email,
-                    password: password
-                });
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                console.log("✅ 폼 제출!");
                 
-                if (authError) throw authError;
+                const email = document.getElementById('email').value;
+                const nickname = document.getElementById('nickname').value;
+                const password = document.getElementById('password').value;
+                const passwordConfirm = document.getElementById('passwordConfirm').value;
                 
-                console.log('Auth 가입 성공:', authData);
+                console.log("입력값:", { email, nickname });
                 
-                // 2. profiles 테이블에 닉네임 저장
-                const { error: profileError } = await supabase
-                    .from('profiles')
-                    .insert({
-                        id: authData.user.id,
+                // 비밀번호 확인
+                if (password !== passwordConfirm) {
+                    alert('❌ 비밀번호가 일치하지 않습니다!');
+                    return;
+                }
+                
+                try {
+                    console.log("회원가입 시도 시작...");
+                    
+                    // 1. Supabase Auth에 회원가입
+                    const { data: authData, error: authError } = await supabaseClient.auth.signUp({
                         email: email,
-                        nickname: nickname
+                        password: password
                     });
-                
-                if (profileError) throw profileError;
-                
-                alert('✅ 회원가입 성공! 로그인 페이지로 이동합니다.');
-                console.log('회원가입 완료!');
-                window.location.href = '/';
-                
-            } catch (error) {
-                alert('❌ 회원가입 실패: ' + error.message);
-                console.error('에러:', error);
-            }
+                    
+                    if (authError) throw authError;
+                    
+                    console.log('✅ Auth 가입 성공:', authData);
+                    
+                    // 2. profiles 테이블에 닉네임 저장
+                    const { error: profileError } = await supabaseClient
+                        .from('profiles')
+                        .insert({
+                            id: authData.user.id,
+                            email: email,
+                            nickname: nickname
+                        });
+                    
+                    if (profileError) throw profileError;
+                    
+                    alert('✅ 회원가입 성공! 로그인 페이지로 이동합니다.');
+                    console.log('✅ 회원가입 완료!');
+                    window.location.href = '/';
+                    
+                } catch (error) {
+                    alert('❌ 회원가입 실패: ' + error.message);
+                    console.error('❌ 에러:', error);
+                }
+            });
         });
+    </script>
     </script>
 </body>
 </html>
