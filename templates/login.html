@@ -50,10 +50,37 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        // Flask에서 전달받은 환경변수
+        const SUPABASE_URL = "{{ supabase_url }}";
+        const SUPABASE_ANON_KEY = "{{ supabase_key }}";
+        
+        // Supabase 클라이언트 생성
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log("✅ Supabase 연결 완료!");
+
+        // 로그인 폼 이벤트
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            // Basic login redirect logic
-            window.location.href = '/map';
+            
+            const email = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            console.log('로그인 시도:', email);
+            
+            // Supabase 로그인
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (error) {
+                alert('❌ 로그인 실패: ' + error.message);
+                console.error('에러:', error);
+            } else {
+                alert('✅ 로그인 성공!');
+                console.log('성공:', data);
+                window.location.href = '/map';
+            }
         });
     </script>
 </body>
