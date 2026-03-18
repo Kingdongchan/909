@@ -19,6 +19,15 @@ def home():
         supabase_key=os.getenv('SUPABASE_ANON_KEY')
     )
 
+@app.route('/signup')  # ← 이 부분 추가!
+def signup():
+    return render_template(
+        'signup.html',
+        supabase_url=os.getenv('SUPABASE_URL'),
+        supabase_key=os.getenv('SUPABASE_ANON_KEY')
+    )
+
+
 @app.route('/map')
 def map_page():
     return render_template('map.html') 
