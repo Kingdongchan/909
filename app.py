@@ -82,6 +82,11 @@ templates = Jinja2Templates(directory="frontend/templates")
 class MessageRequest(BaseModel):
     message: str
 
+
+class UserInput(BaseModel):  # 이 친구가 효자입니다(파싱). 키와 값으로 나눠져있는걸 값만 쏙 빼주는 친구입니다.
+    title: str #타입 췤
+    content: str
+
 # --- 라우트 (API) ---
 
 @app.get("/", response_class=HTMLResponse)
@@ -113,6 +118,17 @@ async def map_page(request: Request):
 @app.get("/community/{place_name}", response_class=HTMLResponse)
 async def community_page(request: Request, place_name: str):
     return templates.TemplateResponse("community.html", {"request": request, "place_name": place_name})
+
+
+# input 받아서 잘 받았다는 메시지 반환 
+@app.post("/user_input")
+async def user_input(data: UserInput):
+    print(f"제목: {data.title}, 내용: {data.content}")  # 서버 로그 확인용
+    return {"message": "input 값 잘 받았습니다~", "title": data.title, "content": data.content}
+
+    title = Column(Text, nullable=False)
+    content = Column(Text, nullable=False)
+
 
 
 
