@@ -137,6 +137,12 @@ async def user_input(data: UserInput, db: Session = Depends(get_db)):
     
     return {"message": "저장 완료!", "id": new_feed.id}
 
+# db 가져옴.
+@app.get("/get_data")
+async def get_data(db: Session = Depends(get_db)):
+    feeds = db.query(Feed).all()
+    return feeds
+
 
 
 if __name__ == "__main__":
