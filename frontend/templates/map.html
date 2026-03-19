@@ -10,21 +10,20 @@
 </head>
 <body>
     <!-- 로그아웃 버튼 -->
-    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
-        <button onclick="logout()" style="
-            padding: 10px 20px;
-            background: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        ">
-            🚪 로그아웃
-        </button>
-    </div>
-
+<div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+    <button onclick="logout()" style="
+        padding: 10px 20px;
+        background: #ff4444;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    ">
+        🚪 로그아웃
+    </button>
+</div>
     <div class="map-layout">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -108,10 +107,8 @@
         </main>
     </div>
 
-    <!-- Scripts -->
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         window.SUPABASE_URL = "{{ supabase_url }}";
@@ -184,5 +181,12 @@
             document.getElementById('placePopup').classList.remove('show');
         }
     </script>
+        <script src="/static/js/auth.js"></script>
+
+    <script>
+    window.SUPABASE_URL = "{{ supabase_url }}";
+    window.SUPABASE_KEY = "{{ supabase_key }}";
+</script>
+<!-- auth.js 불러오기 -->
 </body>
 </html>
