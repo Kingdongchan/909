@@ -16,6 +16,10 @@ if (error) {
     throw error;
 }
 
+if (data.session) {
+    document.cookie = 'sb-access-token=' + data.session.access_token + '; path=/; max-age=3600; SameSite=Lax';
+}
+
 // 성공 시 지도로 이동
 window.location.href = '/map';
 return data;
@@ -34,7 +38,7 @@ if (authError) {
 }
 
 // 2단계: profiles 테이블에 추가
-const { error: profileError } = await supabase
+const { error: profileError } = await supabaseClient
     .from('profiles')
     .insert({
     id: authData.user.id,
@@ -46,8 +50,13 @@ if (profileError) {
     throw profileError;
 }
 
+if (authData.session) {
+    document.cookie = 'sb-access-token=' + authData.session.access_token + '; path=/; max-age=3600; SameSite=Lax';
+}
+
 return authData;
 }
+
 
 // 로그아웃 함수
 async function logout() {
