@@ -60,8 +60,10 @@ return authData;
 
 // 로그아웃 함수
 async function logout() {
-await supabaseClient.auth.signOut();
-window.location.href = '/';
+    await supabaseClient.auth.signOut();
+    // 쿠키 삭제
+    document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+    window.location.href = '/';
 }
 
 // 현재 사용자 가져오기

@@ -139,9 +139,12 @@ async def db_read(db: Session = Depends(get_db)):
 @app.get("/map", response_class=HTMLResponse)
 async def map_page(
     request: Request,
-    user = Depends(require_login) 
+    user = Depends(require_login)
     ):
-    return templates.TemplateResponse("map.html", {"request": request})
+    return templates.TemplateResponse("map.html", {
+        "request": request,
+        "supabase_url": os.getenv('SUPABASE_URL'),    
+        "supabase_key": os.getenv('SUPABASE_ANON_KEY')})
 
 @app.get("/community/{place_name}", response_class=HTMLResponse)
 async def community_page(request: Request, place_name: str, user = Depends(require_login)):
