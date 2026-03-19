@@ -11,6 +11,11 @@ from sqlalchemy.sql import func
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from dependencies import require_login
+from fastapi import FastAPI, Depends, HTTPException, Request, status  # ← status 추가!
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse  # ← RedirectResponse 추가!
+from fastapi.templating import Jinja2Templates
+
 
 # .env 로드 및 설정
 load_dotenv()
@@ -66,6 +71,20 @@ Base.metadata.create_all(bind=engine)
 # --- FastAPI 앱 설정 ---
 app = FastAPI()
 
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    """
+    401 에러 → 로그인 페이지로 리다이렉트
+    """
+    if exc.status_code == 401:
+        return RedirectResponse(url="/", status_code=303)
+    
+    # 다른 에러는 기본 처리
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
@@ -118,11 +137,14 @@ async def db_read(db: Session = Depends(get_db)):
     return feeds
 
 @app.get("/map", response_class=HTMLResponse)
-async def map_page(request: Request):
+async def map_page(
+    request: Request,
+    user = Depends(require_login) 
+    ):
     return templates.TemplateResponse("map.html", {"request": request})
 
 @app.get("/community/{place_name}", response_class=HTMLResponse)
-async def community_page(request: Request, place_name: str):
+async def community_page(request: Request, place_name: str, user = Depends(require_login)):
     return templates.TemplateResponse("community.html", {"request": request, "place_name": place_name})
 
 @app.get("/api/hello")
@@ -135,4 +157,4 @@ async def api_fail():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run(app, host="0.0.0.0", port=5909)
