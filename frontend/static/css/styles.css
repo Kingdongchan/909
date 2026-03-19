@@ -737,28 +737,3 @@ input, button {
 
 /* Icons via unicons or simple text/SVG in HTML */
 
-
-
-/*-----------------------------------------------*/
-
-#write-modal{
-  position: relative;
-  width: 100px;
-  height: 100px;
-  display: none;
-  right: 500px;
-
-}
-
-#user-text{
-  position: absolute;
-  width: 700px;
-  height: 500px;
-  z-index: 999;
-
-}
-
-
-
-
-/*-------------------------------------------------------*/
