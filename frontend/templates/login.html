@@ -89,38 +89,26 @@
     </div>
 
     <script>
-        // Flask에서 전달받은 환경변수
-        const SUPABASE_URL = "{{ supabase_url }}";
-        const SUPABASE_ANON_KEY = "{{ supabase_key }}";
+    // 환경변수 전달
+    window.SUPABASE_URL = "{{ supabase_url }}";
+    window.SUPABASE_KEY = "{{ supabase_key }}";
+</script>
+<script src="/static/js/auth.js"></script>
+<script>
+    // 로그인 폼 이벤트
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        // Supabase 클라이언트 생성
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log("✅ Supabase 연결 완료!");
-
-        // 로그인 폼 이벤트
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            console.log('로그인 시도:', email);
-            
-            // Supabase 로그인
-            const { data, error } = await supabaseClient.auth.signInWithPassword({
-                email: email,
-                password: password
-            });
-            
-            if (error) {
-                alert('❌ 로그인 실패: ' + error.message);
-                console.error('에러:', error);
-            } else {
-                alert('✅ 로그인 성공!');
-                console.log('성공:', data);
-                window.location.href = '/map';
-            }
-        });
+        const email = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        try {
+            await login(email, password);  // auth.js의 함수 사용!
+        } catch (error) {
+            alert('❌ 로그인 실패: ' + error.message);
+        }
+    });
+</script>
     </script>
 </body>
 </html>
