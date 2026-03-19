@@ -21,7 +21,9 @@
                 <h1 style="font-size: 1.25rem;">{{ place_name }}</h1> 
             </div>
             <div>
-                <button class="btn-primary" style="padding: 0.5rem 1rem;">게시글 작성</button>
+                <form>
+                    <button class="btn-primary" style="padding: 0.5rem 1rem;">게시글 작성</button>
+                </form>
             </div>
         </div>
     </header>
@@ -52,6 +54,11 @@
 
 
         <aside class="right-sidebar"> <!-- 인기 장소-->
+
+            <div id="write-modal">
+            <!--js 들어갈 예정-->
+            </div>
+
             <div class="widget">
                 <div class="widget-title">
                     <span style="color: #f97316;">📈</span> 내 주변 인기 장소
@@ -122,6 +129,60 @@
             `;
             postListEl.appendChild(card);
         });
+
+
+        // 게시글 작성 버튼 불러옴
+        const btn_primary = document.querySelector(".btn-primary")
+        const write_modal = document.querySelector("#write-modal")
+
+        btn_primary.addEventListener('click', async(event) => {
+            event.preventDefault();
+            console.log('게시글 작성 버튼 클릭됨');
+            write_modal.style.display = "block";
+            write_modal.innerHTML = `
+            <form>
+                <button id="btn-save">저장</button>
+                <input type="text" id="title-user" placeholder="제목을 입력하세요">
+                <textarea name="textuser" id="text-user" placeholder="입력해주세요"></textarea>
+            <form>
+            `
+         })
+
+
+         const btn_save = document.querySelector(".btn-save")  //저장 버튼
+         const title_user = document.querySelector(".title-user") // 제목
+         const text_user = document.querySelector(".text-user") // 내용
+
+         btn_save.addEventListener("click", async(event) =>{
+            event.preventDefault();
+            const value_title = title_user.value
+            const value_text = text_user.value
+            console.log('저장 버튼 클릭됨', value_text, value_title);
+
+            //* fetch
+            const response = await fetch("/user_input", {  // user_input 어딨니! 
+                method : "POST",
+                headers : { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ 
+                "content": value_text, 
+                "title": value_title 
+                })
+                });
+
+                const json_response = await response.json(); // * 받은거
+                console.log(json_response);
+                }); 
+
+                // 에러 처리 없음 
+                // 빈 값 검증 없음
+
+
+
+
+         
+
+
+
     </script>
 </body>
 </html>
