@@ -59,6 +59,11 @@
             <!--js 들어갈 예정-->
             </div>
 
+            <div class="div-feeds">
+            <!--피드 js 들어갈 예정-->
+            </div>
+
+
             <div class="widget">
                 <div class="widget-title">
                     <span style="color: #f97316;">📈</span> 내 주변 인기 장소
@@ -149,17 +154,19 @@
          })
 
 
-
-         // 글, 내용을 입력 후 저장 -> app.py에 /user_input를 통해 전송(응답도 받아올것)
          const btn_save = document.querySelector(".btn-save")  //저장 버튼
          const title_user = document.querySelector(".title-user") // 제목
          const text_user = document.querySelector(".text-user") // 내용
+         const div_feeds = document.querySelector("#div-feeds") // 내용
 
+
+         // DB에 저장하는 로직
+         //저장 버튼 누르면 /user_input을 기점으로 제목과 내용을 보내고, 받아옴
          btn_save.addEventListener("click", async(event) =>{
             event.preventDefault();
+            console.log('저장 버튼 클릭됨', value_text, value_title);
             const value_title = title_user.value
             const value_text = text_user.value
-            console.log('저장 버튼 클릭됨', value_text, value_title);
 
             //* fetch
             const response = await fetch("/user_input", {  // user_input 어딨니! 
@@ -179,9 +186,37 @@
                 // 빈 값 검증 없음
 
 
+        // 저장 버튼 클릭하면 저장된 데이터를 가져와 피드를 그려내는 
+        btn_save.addEventListener("click", async (event) => {
+
+        try {
+            const response = await fetch('/get_data'); // 예시 주소입니다.
+            const data = await response.json(); // 서버가 준 데이터를 JS 객체로 변환
+
+            div_feeds.style.display = "block";
+            div_feeds.innerHTML = `          
+                <div class="post-content" style="flex: 1">
+                    <h3>${data.title}</h3> 
+                    <p>${data.content}</p>
+                    <div class="post-meta">
+                        <span></span> •
+                        <span></span>
+                        <span style="margin-left: auto;">👍 </span>
+                        <span>💬 </span>
+                        <span class="badge"></span>
+                    </div>
+                </div>
+                `
+            }
+        catch (error) {
+            console.error("데이터 가져오기 실패:", error);
+            }
+            });
 
 
-         
+
+
+
 
 
 
