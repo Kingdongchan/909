@@ -10,13 +10,13 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 import os
 from dotenv import load_dotenv
-from pydantic import BaseModel # 데이터 검증용
+from pydantic import BaseModel
 
 # .env 로드 및 설정
 load_dotenv()
 DATABASE_URL = os.getenv("DB_URL")
 
-# --- SQLAlchemy 설정 (FastAPI는 Flask-SQLAlchemy 대신 순수 SQLAlchemy를 주로 씀) ---
+# --- SQLAlchemy 설정 ---
 engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 10})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
@@ -84,23 +84,36 @@ class MessageRequest(BaseModel):
 
 # --- 라우트 (API) ---
 
+# ✅ Supabase Auth: 로그인 페이지
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    # Flask의 render_template과 비슷하지만 request를 같이 넘겨야 함
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(
+        "login.html", 
+        {
+            "request": request,
+            "supabase_url": os.getenv('SUPABASE_URL'),      # ← 추가!
+            "supabase_key": os.getenv('SUPABASE_ANON_KEY')  # ← 추가!
+        }
+    )
+
+# ✅ Supabase Auth: 회원가입 페이지
+@app.get("/signup", response_class=HTMLResponse)
+async def signup(request: Request):
+    return templates.TemplateResponse(
+        "signup.html", 
+        {
+            "request": request,
+            "supabase_url": os.getenv('SUPABASE_URL'),      # ← 추가!
+            "supabase_key": os.getenv('SUPABASE_ANON_KEY')  # ← 추가!
+        }
+    )
 
 @app.post("/db_create")
 async def db_create(data: MessageRequest, db: Session = Depends(get_db)):
-    # Flask의 request.get_json() 대신 pydantic 모델(data)을 사용함
-    # Human 모델이 정의되어 있지 않아 예시 코드로 대체 (Feed 등으로 활용 가능)
-    # new_data = Feed(content=data.message, ...) 
-    # db.add(new_data)
-    # db.commit()
     return {"result": "success", "message": f"'{data.message}' 잘 받았어요!"}
 
 @app.get("/db_read")
 async def db_read(db: Session = Depends(get_db)):
-    # 전체 조회 예시 (Human 모델 대신 Feed 예시)
     feeds = db.query(Feed).all()
     return feeds
 
@@ -122,5 +135,4 @@ async def api_fail():
 
 if __name__ == "__main__":
     import uvicorn
-    # Flask의 app.run 대신 uvicorn 사용
     uvicorn.run(app, host="0.0.0.0", port=5909)
