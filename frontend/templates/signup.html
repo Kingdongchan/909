@@ -89,78 +89,56 @@
         </div>
     </div>
 
-    <script>
-        // Flask에서 전달받은 환경변수
-        const SUPABASE_URL = "{{ supabase_url }}";
-        const SUPABASE_ANON_KEY = "{{ supabase_key }}";
+<script>
+    // 환경변수 전달
+    window.SUPABASE_URL = "{{ supabase_url }}";
+    window.SUPABASE_KEY = "{{ supabase_key }}";
+</script>
+<script src="/static/js/auth.js"></script>
+<script>
+    // 회원가입 폼 이벤트
+    document.getElementById('signupForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        // Supabase 클라이언트 생성
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log("✅ Supabase 연결 완료!");
-
-        // 회원가입 폼 이벤트
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        const email = document.getElementById('email').value;
+        const nickname = document.getElementById('nickname').value;
+        const password = document.getElementById('password').value;
+        const passwordConfirm = document.getElementById('passwordConfirm').value;
+        
+        // 비밀번호 확인
+        if (password !== passwordConfirm) {
+            alert('❌ 비밀번호가 일치하지 않습니다!');
+            return;
+        }
+        
+        try {
+            // auth.js의 signup 함수 사용!
+            const authData = await signup(email, password, nickname);
             
-            const email = document.getElementById('email').value;
-            const nickname = document.getElementById('nickname').value;
-            const password = document.getElementById('password').value;
-            const passwordConfirm = document.getElementById('passwordConfirm').value;
-            
-            // 비밀번호 확인
-            if (password !== passwordConfirm) {
-                alert('❌ 비밀번호가 일치하지 않습니다!');
-                return;
+            // 이메일 인증 여부에 따른 메시지 분기
+            if (authData.user && authData.session === null) {
+                alert('📧 인증 메일이 발송되었습니다! 메일함을 확인하여 가입을 완료해 주세요.');
+                window.location.href = '/';
+            } else {
+                alert('✅ 회원가입 성공! 이제 서비스를 이용하실 수 있습니다.');
+                window.location.href = '/map';
             }
             
-            try {
-                // 1. Supabase Auth에 회원가입
-                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-                    email: email,
-                    password: password
-                });
-                
-                if (authError) throw authError;
-                
-                // 2. profiles 테이블에 닉네임 저장
-                if (authData.user) {
-                    const { error: profileError } = await supabaseClient
-                        .from('profiles')
-                        .insert({
-                            id: authData.user.id,
-                            email: email,
-                            nickname: nickname
-                        });
-                    
-                    if (profileError) {
-                        console.warn('⚠️ 프로필 저장 중 오류 발생(이메일 인증 전일 수 있음):', profileError.message);
-                    }
-                }
-                
-                // 이메일 인증 여부에 따른 메시지 분기
-                if (authData.user && authData.session === null) {
-                    alert('📧 인증 메일이 발송되었습니다! 메일함을 확인하여 가입을 완료해 주세요.');
-                    window.location.href = '/';
-                } else {
-                    alert('✅ 회원가입 성공! 이제 서비스를 이용하실 수 있습니다.');
-                    window.location.href = '/map';
-                }
-                
-            } catch (error) {
-                let msg = error.message;
-                // 주요 에러 메시지 한국어 변환
-                if (msg.includes("already registered")) {
-                    msg = "이미 가입된 이메일입니다.";
-                } else if (msg.includes("Password should be at least")) {
-                    msg = "비밀번호는 최소 6자 이상이어야 합니다.";
-                } else if (msg.includes("Invalid email")) {
-                    msg = "유효하지 않은 이메일 형식입니다.";
-                }
-                
-                alert('❌ 회원가입 실패: ' + msg);
-                console.error('에러 상세:', error);
+        } catch (error) {
+            let msg = error.message;
+            // 주요 에러 메시지 한국어 변환
+            if (msg.includes("already registered")) {
+                msg = "이미 가입된 이메일입니다.";
+            } else if (msg.includes("Password should be at least")) {
+                msg = "비밀번호는 최소 6자 이상이어야 합니다.";
+            } else if (msg.includes("Invalid email")) {
+                msg = "유효하지 않은 이메일 형식입니다.";
             }
-        });
-    </script>
+            
+            alert('❌ 회원가입 실패: ' + msg);
+            console.error('에러 상세:', error);
+        }
+    });
+</script>
 </body>
 </html>
