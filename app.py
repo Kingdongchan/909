@@ -119,7 +119,11 @@ async def db_read(db: Session = Depends(get_db)):
 
 @app.get("/map", response_class=HTMLResponse)
 async def map_page(request: Request):
-    return templates.TemplateResponse("map.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/api/kakaomap-key")
+async def get_kakao_map_key():
+    return {"kakao_map_key": os.getenv("KAKAO_API_KEY")}
 
 @app.get("/community/{place_name}", response_class=HTMLResponse)
 async def community_page(request: Request, place_name: str):
