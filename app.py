@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 import os
+import requests
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from dependencies import require_login
@@ -20,6 +21,10 @@ from fastapi.templating import Jinja2Templates
 # .env 로드 및 설정
 load_dotenv()
 DATABASE_URL = os.getenv("DB_URL")
+# Kakao API 호출에 사용될 애플리케이션 키. .env 파일에서 KAKAO_API_KEY 환경 변수를 로드합니다.
+# 이 키는 Kakao Local API (주소 검색) 및 Kakao Navi API (길찾기) 호출 시 인증에 사용됩니다.
+KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
+
 
 # --- SQLAlchemy 설정 ---
 engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 10})
@@ -98,8 +103,25 @@ app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 templates = Jinja2Templates(directory="frontend/templates")
 
 # --- Pydantic 모델 (입력 데이터 양식) ---
+# 클라이언트로부터 메시지를 받을 때 사용되는 모델
 class MessageRequest(BaseModel):
     message: str
+
+# [추가됨] 클라이언트로부터 주소 문자열을 받을 때 사용되는 모델 (`/api/geocode` 엔드포인트)
+class GeocodeRequest(BaseModel):
+    address: str
+
+# [추가됨] 클라이언트로부터 경로 탐색을 위한 출발지/도착지 좌표를 받을 때 사용되는 모델 (`/api/route` 엔드포인트)
+class RouteRequest(BaseModel):
+    startX: float # 출발지 경도
+    startY: float # 출발지 위도
+    endX: float   # 도착지 경도
+    endY: float   # 도착지 위도
+
+# [추가됨] 클라이언트로부터 경로를 구성하는 좌표 리스트를 받을 때 사용되는 모델 (`/api/shops` 엔드포인트)
+# 이 모델은 경로 주변의 상점을 검색할 때 사용될 수 있습니다.
+class ShopsRequest(BaseModel):
+    coordinates: list
 
 # --- 라우트 (API) ---
 
@@ -137,14 +159,71 @@ async def db_read(db: Session = Depends(get_db)):
     return feeds
 
 @app.get("/map", response_class=HTMLResponse)
-async def map_page(
-    request: Request,
-    user = Depends(require_login)
-    ):
-    return templates.TemplateResponse("map.html", {
-        "request": request,
-        "supabase_url": os.getenv('SUPABASE_URL'),    
-        "supabase_key": os.getenv('SUPABASE_ANON_KEY')})
+async def map_page(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# Kakao Maps API 키를 클라이언트에 제공하는 엔드포인트
+# 이 키는 map.js에서 Kakao 지도 SDK를 동적으로 로드하는 데 사용됩니다.
+@app.get("/api/kakaomap-key")
+async def get_kakao_map_key():
+    return {"kakao_map_key": KAKAO_API_KEY}
+
+# [추가됨] 주소 문자열을 좌표로 변환하는 Geocoding API 엔드포인트
+# 클라이언트(navigation.js)로부터 주소(address)를 받아 Kakao Local API를 호출하여
+# 해당 주소의 위도(lat)와 경도(lng)를 반환합니다.
+@app.post("/api/geocode")
+async def geocode(req: GeocodeRequest):
+    url = "https://dapi.kakao.com/v2/local/search/address.json"
+    headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}"}
+    params = {"query": req.address} # 클라이언트가 보낸 주소를 쿼리 파라미터로 사용
+
+    # Kakao Local API 호출
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()
+
+    # 응답에서 첫 번째 검색 결과의 좌표를 추출하여 반환
+    if data['documents']:
+        doc = data['documents'][0]
+        return {"lat": float(doc['y']), "lng": float(doc['x'])}
+    
+    # 주소를 찾을 수 없는 경우 404 에러 반환
+    raise HTTPException(status_code=404, detail="주소를 찾을 수 없습니다.")
+
+# [추가됨] 출발지/도착지 좌표를 받아 최단 경로를 탐색하는 API 엔드포인트
+# 클라이언트(navigation.js)로부터 출발지/도착지 좌표를 받아 Kakao Navi API를 호출하여
+# 최단 경로 정보를 반환합니다.
+@app.post("/api/route")
+async def get_route(req: RouteRequest):
+    url = "https://apis-navi.kakaomobility.com/v1/directions"
+    headers = {"Authorization": f"KakaoAK {KAKAO_API_KEY}", "Content-Type": "application/json"}
+    # Kakao Navi API 요청 본문 구성
+    data = {
+        "origin": {"x": req.startX, "y": req.startY},      # 출발지 좌표 (경도, 위도)
+        "destination": {"x": req.endX, "y": req.endY},    # 도착지 좌표 (경도, 위도)
+    }
+
+    # Kakao Navi API 호출
+    response = requests.post(url, headers=headers, json=data)
+    # Kakao Navi API의 응답을 클라이언트에 그대로 전달
+    return response.json()
+
+# [추가됨] 경로 주변의 상점 데이터를 제공하는 API 엔드포인트 (현재 플레이스홀더)
+# 클라이언트(category.js)로부터 경로를 구성하는 좌표 리스트를 받아,
+# 해당 경로 주변에 위치한 상점들의 정보를 반환합니다.
+# 현재는 예시 데이터를 반환하며, 실제 구현에서는 DB 쿼리 로직이 필요합니다.
+@app.post("/api/shops")
+async def get_shops(req: ShopsRequest):
+    # 이 부분은 실제 데이터베이스 쿼리 로직으로 대체되어야 합니다.
+    # 예시: 경로의 좌표들을 기반으로 특정 반경 내의 상점을 DB에서 조회
+    print(f"Received coordinates for shop search: {len(req.coordinates)} points")
+    
+    # 현재는 더미 데이터를 반환합니다.
+    return [
+        {"name": "더미 상점 1", "lat": 36.35, "lng": 127.38, "category": "맛집"},
+        {"name": "더미 상점 2", "lat": 36.36, "lng": 127.39, "category": "카페"},
+        {"name": "더미 상점 3", "lat": 36.34, "lng": 127.37, "category": "여행지"},
+    ]
+
 
 @app.get("/community/{place_name}", response_class=HTMLResponse)
 async def community_page(request: Request, place_name: str, user = Depends(require_login)):
