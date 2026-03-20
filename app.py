@@ -7,22 +7,23 @@ from sqlalchemy import create_engine, Column, BigInteger, Text, DateTime, Float,
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.dialects.postgresql import UUID
-import uuid
 from sqlalchemy.sql import func
 import os
 from dotenv import load_dotenv
 from pydantic import BaseModel # 데이터 검증용
+from typing import Optional
 
 # .env 로드 및 설정
 load_dotenv()
 DATABASE_URL = os.getenv("DB_URL")
 
-# --- SQLAlchemy 설정 (FastAPI는 Flask-SQLAlchemy 대신 순수 SQLAlchemy를 주로 씀) ---
+# --- [DB 설정] SQLAlchemy 연결 설정 ---
 engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 10})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# DB 세션 의존성 주입 함수
+# [의존성 주입] DB 세션 생성 및 종료 관리 함수
+# API 요청 시 세션을 열고, 응답 후 자동으로 닫습니다.
 def get_db():
     db = SessionLocal()
     try:
@@ -30,7 +31,7 @@ def get_db():
     finally:
         db.close()
 
-# --- 모델 정의 (스키마) ---
+# --- [모델 정의] DB 테이블 스키마 ---
 class Profile(Base):
     __tablename__ = 'profiles'
     id = Column(UUID(as_uuid=True), primary_key=True)
@@ -39,10 +40,11 @@ class Profile(Base):
     profile_img_url = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+# 게시글(Feed) 테이블 정의
 class Feed(Base):
     __tablename__ = 'feeds'
     id = Column(BigInteger, primary_key=True, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('profiles.id'), nullable=True) # 이후 false로 변경 예정
+    user_id = Column(UUID(as_uuid=True), ForeignKey('profiles.id'), nullable=False)
     title = Column(Text, nullable=False)
     content = Column(Text, nullable=False)
     image_url = Column(Text)
@@ -64,7 +66,7 @@ class Like(Base):
 # DB 테이블 생성
 Base.metadata.create_all(bind=engine)
 
-# --- FastAPI 앱 설정 ---
+# --- [FastAPI 앱 설정] ---
 app = FastAPI()
 
 # CORS 설정
@@ -79,18 +81,23 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="frontend/static"), name="static")
 templates = Jinja2Templates(directory="frontend/templates")
 
-# --- Pydantic 모델 (입력 데이터 양식) ---
+# --- [Pydantic 모델] 요청 데이터 검증 스키마 ---
 class MessageRequest(BaseModel):
     message: str
 
 
-class UserInput(BaseModel):  # 이 친구가 효자입니다(파싱). 키와 값으로 나눠져있는걸 값만 쏙 빼주는 친구입니다.
-    title: str #타입 췤
+# 게시글 작성 요청 데이터 (POST)
+class UserInput(BaseModel):
+    title: str 
     content: str
+    user_id: str # 작성자 ID (클라이언트에서 전달받음)
+    image_url: Optional[str] = None # 이미지 URL (없을 수도 있음)
 
+# 게시글 수정 요청 데이터 (PATCH)
 class FeedUpdate(BaseModel):
     title: str
     content: str
+    image_url: Optional[str] = None
 
 # --- 라우트 (API) ---
 
@@ -99,9 +106,10 @@ async def home(request: Request):
     # Flask의 render_template과 비슷하지만 request를 같이 넘겨야 함
     return templates.TemplateResponse("login.html", {"request": request})
 
+# 테스트용 DB 생성 API
 @app.post("/db_create")
 async def db_create(data: MessageRequest, db: Session = Depends(get_db)):
-    # Flask의 request.get_json() 대신 pydantic 모델(data)을 사용함
+    # request body 데이터를 Pydantic 모델(data)로 받아 처리
     # Human 모델이 정의되어 있지 않아 예시 코드로 대체 (Feed 등으로 활용 가능)
     # new_data = Feed(content=data.message, ...) 
     # db.add(new_data)
@@ -119,24 +127,22 @@ async def map_page(request: Request):
     return templates.TemplateResponse("map.html", {"request": request})
 
 
-# /community/플레이스명(라우터) -
+# [커뮤니티 페이지] 특정 장소의 커뮤니티 화면 렌더링
 @app.get("/community/{place_name}", response_class=HTMLResponse)
 async def community_page(request: Request, place_name: str):
     return templates.TemplateResponse("community.html", {"request": request, "place_name": place_name})
 
 
-# input 받아서 잘 받았다는 메시지 반환 
+# [API] 게시글 작성 (Create)
 @app.post("/user_input")
 async def user_input(data: UserInput, db: Session = Depends(get_db)):
-    print(f"제목: {data.title}, 내용: {data.content}")  # 서버 로그 확인용
-    
-    # 임시 유저 ID 생성 (실제 서비스에서는 로그인 세션에서 가져와야 함)
-    temp_user_id = uuid.uuid4()
+    print(f"제목: {data.title}, 내용: {data.content}, 이미지: {data.image_url}")
     
     new_feed = Feed(          # Feed 모델에 값 담기
         title=data.title,
         content=data.content,
-        user_id=temp_user_id 
+        user_id=data.user_id,
+        image_url=data.image_url
     )
     
     db.add(new_feed)     # DB에 올리기
@@ -144,15 +150,15 @@ async def user_input(data: UserInput, db: Session = Depends(get_db)):
     db.refresh(new_feed) # 자동값 반영
     
     return {
-        "message": "저장 완료!", 
-        "id": new_feed.id, 
+        "id": new_feed.id,
         "user_id": str(new_feed.user_id),
         "title": new_feed.title,
-        "content": new_feed.content
+        "content": new_feed.content,
+        "image_url": new_feed.image_url
     }
 
-# 게시글 수정 (Update)
-@app.put("/feed/{feed_id}")
+# [API] 게시글 수정 (Update)
+@app.patch("/feed/{feed_id}")
 async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_db)):
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     
@@ -161,31 +167,20 @@ async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_
     
     feed.title = data.title
     feed.content = data.content
+    feed.image_url = data.image_url
     
     db.commit()
     db.refresh(feed)
     
     return {
-        "message": "수정 완료!",
         "id": feed.id,
+        "user_id": str(feed.user_id),
         "title": feed.title,
-        "content": feed.content
+        "content": feed.content,
+        "image_url": feed.image_url
     }
 
-# 게시글 삭제 (Delete)
-@app.delete("/feed/{feed_id}")
-async def delete_feed(feed_id: int, db: Session = Depends(get_db)):
-    feed = db.query(Feed).filter(Feed.id == feed_id).first()
-    
-    if not feed:
-        raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
-    
-    db.delete(feed)
-    db.commit()
-    
-    return {"message": "삭제 완료", "id": feed_id}
-
-# db 가져옴.
+# [API] 게시글 목록 조회 (Read)
 @app.get("/get_data")
 async def get_data(db: Session = Depends(get_db)):
     feeds = db.query(Feed).all()
