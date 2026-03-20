@@ -97,3 +97,37 @@ async function loginWithGoogle() {
         alert('구글 로그인 중 오류 발생');
     }
 }
+
+// OAuth 콜백 후 세션 확인 및 리다이렉트
+window.addEventListener('DOMContentLoaded', async () => {
+    console.log('🔍 페이지 로드 - 세션 확인 시작');
+    
+    // URL에 hash가 있는지 확인 (OAuth 콜백)
+    if (window.location.hash) {
+        console.log('🔵 OAuth 콜백 감지:', window.location.hash);
+    }
+    
+    // 현재 세션 확인
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    
+    console.log('🔍 세션 확인 결과:', session);
+    console.log('🔍 에러:', error);
+    
+    if (session) {
+        console.log('✅ 로그인되어 있음!');
+        
+        // 쿠키에 토큰 저장
+        document.cookie = 'sb-access-token=' + session.access_token + 
+                        '; path=/; max-age=3600; SameSite=Lax';
+        
+        console.log('✅ 쿠키 저장 완료');
+        
+        // 현재 페이지가 로그인 페이지면 /map으로 이동
+        if (window.location.pathname === '/' || window.location.pathname === '/signup') {
+            console.log('🚀 /map으로 리다이렉트');
+            window.location.href = '/map';
+        }
+    } else {
+        console.log('❌ 세션 없음 - 로그인 필요');
+    }
+});
