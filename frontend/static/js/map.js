@@ -29,7 +29,8 @@ async function connectKakaomap() {
         // 스크립트의 타입을 'text/javascript'로 설정합니다.
         script.type = 'text/javascript';
         // API 로딩이 완료되면 자동으로 실행되지 않도록 `autoload=false` 파라미터를 추가합니다.
-        script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false`;
+        script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false`;
+        console.log("1")
 
         // 생성된 스크립트 태그를 문서의 'head'에 추가합니다.
         document.head.appendChild(script);
@@ -37,6 +38,7 @@ async function connectKakaomap() {
         // 스크립트 로딩이 완료되면 실행될 콜백 함수를 정의합니다.
         script.onload = () => {
             // 카카오맵 API를 로드합니다.
+        console.log("2")
             kakao.maps.load(() => {
                 // 지도를 표시할 HTML 요소를 가져옵니다.
                 const mapContainer = document.getElementById('map');
@@ -58,7 +60,7 @@ async function connectKakaomap() {
         };
     } catch (error) {
         console.error('Error fetching Kakao map key:', error);
-    }
+    } 
 }
 
 /**
