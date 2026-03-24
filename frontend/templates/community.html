@@ -261,36 +261,22 @@
 
 
 
-// 테스트용 로그인(밑에꺼 살리고 지우면 되는듯)
+        // --- [초기화] DOM 로드 시 로그인 체크 및 데이터 로딩 ---
         window.addEventListener('DOMContentLoaded', async () => {
-            login_user_id = "86f71765-646e-4d7c-b4da-0eb270765fd2"; // 로그인 체크 임시 스킵
-            await fetchAllFeeds();
-
-            // URL에서 category 읽어서 select 기본값 설정
-            const urlParams = new URLSearchParams(window.location.search);
-            const categoryFromUrl = urlParams.get('category');
-            if (categoryFromUrl) {
-                document.getElementById('category-filter').value = categoryFromUrl;
+            // 로그인 체크 (localStorage 사용 시뮬레이션)
+            const storedUser = localStorage.getItem('login_user_id');
+            if (!storedUser) {
+                alert("로그인이 필요합니다."); 
+                window.location.href = "/"; // 로그인 페이지 리다이렉트
+                return;
             }
+            login_user_id = storedUser;
+            console.log("Logged in user:", login_user_id);
+
+            // 전체 피드 불러오기
+            await fetchAllFeeds();
         });
 
-//---------------------------------------------------------------------------------
-        // // --- [초기화] DOM 로드 시 로그인 체크 및 데이터 로딩 ---
-        // window.addEventListener('DOMContentLoaded', async () => {
-        //     // 로그인 체크 (localStorage 사용 시뮬레이션)
-        //     const storedUser = localStorage.getItem('login_user_id');
-        //     if (!storedUser) {
-        //         alert("로그인이 필요합니다."); 
-        //         window.location.href = "/"; // 로그인 페이지 리다이렉트
-        //         return;
-        //     }
-        //     login_user_id = storedUser;
-        //     console.log("Logged in user:", login_user_id);
-
-        //     // 전체 피드 불러오기
-        //     await fetchAllFeeds();
-        // });
-//---------------------------------------------------------------------------------
 
         // --- [조회] 서버에서 전체 게시글 불러오기 (GET) ---
         async function fetchAllFeeds() {
