@@ -20,7 +20,9 @@
                 <button class="back-btn" onclick="window.location.href='/map'">  
                     <img src="/static/image/cha.jpg"> <!--static 안으로 바꿔야 한다고 함.-->
                 </button>
+
                 <h1 style="font-size: 1.25rem;">{{ place_name }}</h1>  <!--*플레이스 이름-->
+
                 <select id="category-filter">  <!--카테고리 select 추가-->
                     <option value="">전체</option>
                     <option value="음식">음식</option>
@@ -28,94 +30,74 @@
                     <option value="문화">문화</option>
                     <option value="쇼핑">쇼핑</option>
                 </select>
+
             </div>
+
             <div>
-                <button class="btn-primary" id="btn-open-write">게시글 작성</button> 
+                <button class="btn-primary" id="btn-open-write">게시글 작성</button> <!--!!!!  게시글 작성-->
             </div>
+
         </div>
     </header>
 
 
     <div class="community-layout">
         <main class="main-content">
-
             <div class="top-bar"> <!-- 검색 및 탭 영역 -->
                 <div class="tabs">   <!--검색창 밑 버튼(전체, 추천순, 최신, 리뷰, 사진)-->
                     
                     <div>전체</div>
-                    <div></div>
-                    <div></div>
-                    <div></div>
-                    
-                    <button class="tab active">전체</button>
-                    <button class="tab">추천순</button>
-                    <button class="tab">최신</button>
-                    <button class="tab">사진</button>
-                </div>
-            </div>
 
-            
-            <div class="post-list" id="postList">
-                <!--! 피드 추가될 부분 -->
+                    <div class="feed-divs" id="feed-div">
+                        <!--! 피드 추가될 부분 -->
+                    </div>
+
+                    <aside class="right-sidebar"> <!-- 인기 장소-->
+
+                        <div class="widget">
+                            <div class="widget-title">
+                                <h4 style="color: #000000;">내 주변 인기 장소</h4> 
+                            </div>
+
+                            <div class="popular-place"> <!--장소 1위-->
+                                <div class="rank">01</div>
+                                <div>
+                                    <h4 style="font-size: 0.875rem;">판암수족관</h4>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted);">오늘 1,267 건</p>  <!--TODO. 조회수 구하는 로직 필요-->
+                                </div>
+                            </div>
+
+                            <div class="popular-place"> <!--장소 2위-->
+                                <div class="rank">02</div>
+                                <div>
+                                    <h4 style="font-size: 0.875rem;">스마더프로 쇼핑</h4>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted);">오늘 982건씩</p> 
+                                </div>
+                            </div>
+
+                            <div class="popular-place"> <!--장소 3위-->
+                                <div class="rank">03</div>
+                                <div>
+                                    <h4 style="font-size: 0.875rem;">류성준탑</h4>
+                                    <p style="font-size: 0.75rem; color: var(--text-muted);">오늘 620건험장</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </aside>
+
+                </div>
             </div>
         </main>
     </div>
 
-
-
-        <aside class="right-sidebar"> <!-- 인기 장소-->
-
-            <div class="widget">
-                <div class="widget-title">
-                    <h4 style="color: #000000;">내 주변 인기 장소</h4> 
-                </div>
-
-                <div class="popular-place"> <!--장소 1위-->
-                    <div class="rank">01</div>
-                    <div>
-                        <h4 style="font-size: 0.875rem;">판암수족관</h4>
-                        <p style="font-size: 0.75rem; color: var(--text-muted);">오늘 1,267 건</p>  <!--TODO. 조회수 구하는 로직 필요-->
-                    </div>
-                </div>
-
-                <div class="popular-place"> <!--장소 2위-->
-                    <div class="rank">02</div>
-                    <div>
-                        <h4 style="font-size: 0.875rem;">스마더프로 쇼핑</h4>
-                        <p style="font-size: 0.75rem; color: var(--text-muted);">오늘 982건씩</p> 
-                    </div>
-                </div>
-
-                <div class="popular-place"> <!--장소 3위-->
-                    <div class="rank">03</div>
-                    <div>
-                        <h4 style="font-size: 0.875rem;">류성준탑</h4>
-                        <p style="font-size: 0.75rem; color: var(--text-muted);">오늘 620건험장</p>
-                    </div>
-                </div>
-            </div>
-
-        </aside>
-
-
-
-    <!-- *모달 안 작성, 상세(Read), 수정 -->
-    <div id="div_modal" class="modal-overlay">
+    <!--* 게시글 작성 버튼 클릭 시 '모달' 작성, 상세(Read), 수정 -->
+    <div id="write-div-modal" class="modal-overlay">
         <div class="modal-box">
             
             <!-- 게시글 작성 모달 -->
             <div id="write-section" class="hidden">
                 <h3>게시글 작성</h3>
-
-                <div class="input-group">
-                    <select id="input_category">   <!-- 추가 -->
-                        <option value="">카테고리 선택</option>
-                        <option value="음식">음식</option>
-                        <option value="영화">영화</option>
-                        <option value="문화">문화</option>
-                        <option value="쇼핑">쇼핑</option>
-                    </select>
-                </div>
 
                 <div class="input-group">
                     <input type="text" id="input_title" placeholder="제목">  <!--*제목-->
@@ -125,7 +107,7 @@
                 </div>
                 <div class="input-group">
                     <input type="file" id="input-file" accept="image/*"> <!--*이미지-->
-                    <button id="input-file-add">추가</button>  <!--*추가-->
+                    <div id = "preview-img"></div> <!--!이미지 미리보기 영역 추가-->
                 </div>
                 <div class="btn-group">
                     <button id="btn-write-save" class="btn btn-primary">저장</button>  <!--*저장-->
@@ -137,7 +119,6 @@
             <div id="view-section" class="hidden">
                 <h3 id="view_title"></h3>
                 <div id="view_img_area" style="margin-bottom: 1rem;"></div>
-                <p id="view_category" style="color: #f97316;"></p>  <!-- 추가 -->
                 <p id="view_content" style="white-space: pre-wrap; color: #334155;"></p>
                 <div class="btn-group">
                     <button id="btn-to-edit" class="btn btn-primary hidden">수정</button>
@@ -145,7 +126,6 @@
                 </div>
             </div>
 
-            
             <!-- 수정 모달 -->
             <div id="edit-section" class="hidden">
                 <h3>게시글 수정</h3>
@@ -172,6 +152,13 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/frontend/static/js/navigation.js"></script>
-    <script src="/frontend/static/js/community.js"></script> <!--js 로직 분리-->
-//------------------------------------------------------------------------------------------------------------------
+    <script src="/static/js/navigation.js"></script>
+
+    <script> //py에서 받은 키값을 js에서 쓸 수 있게 전역 변수처리
+        const SUPABASE_URL = "{{ supabase_url }}";
+        const SUPABASE_KEY = "{{ supabase_key }}";
+    </script>
+    <script src="/static/js/community.js" type="module"></script> <!--*js 로직 분리-->
+
+</body>
+</html>
