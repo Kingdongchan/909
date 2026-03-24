@@ -32,7 +32,7 @@ KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
 engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 10})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-
+templates = Jinja2Templates(directory="frontend")  #html이나 js로 보낼건데 frontend 걔네 다 저 안에 있어
 
 # [의존성 주입]
 # API 요청 시 DB 세션을 열고, 응답 후 자동으로 닫습니다(종료 관리)
@@ -342,6 +342,17 @@ async def delete_feed(feed_id: int, db: Session = Depends(get_db)):
     db.delete(feed)
     db.commit()
     return {"result": "success"}
+
+# 스토리지 키 js로 보내는 용도
+@app.get("/community")
+async def community_page(request: Request):
+    # .env에서 가져오기
+    return templates.TemplateResponse("community.html", {
+        "request": request,
+        "supabase_url": os.getenv("SUPABASE_URL"),
+        "supabase_key": os.getenv("SUPABASE_ANON_KEY")
+    })
+
 
 #!--------------------------------------------------------------------------------------------------sb
 

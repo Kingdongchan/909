@@ -174,10 +174,12 @@
 
         </div>
     </div>
-
+    <script src="frontend/static/js/supabase.js"></script>
+    <script src="frontend/static/js/navigation.js"></script> <!-- js 추가 (오전) --> <!--js에 있는 api 키 넘겨줌.-->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script> 
 
+
+    <script> 
 //------------------------------------------------------------------------------------------------------------------
         // 1. input 태그 가져오기
         const input_file = document.querySelector('#input-file');
@@ -380,7 +382,7 @@
         document.getElementById('btn-write-save').addEventListener('click', async () => {
             const title = document.getElementById('input_title').value;
             const content = document.getElementById('input_content').value;
-            const fileInput = document.getElementById('input_file');
+            const fileInput = document.getElementById('input-file');
             const category = document.getElementById('input_category').value; 
             const file = fileInput.files[0];
             if(!title || !content) return alert("제목과 내용을 입력하세요.");
@@ -390,10 +392,10 @@
                 // 1. 파일이 있다면 Supabase Storage에 업로드
                 if (file) {
                     const fileName = `feed/${Date.now()}_${file.name}`;
-                    const { data, error } = await supabaseClient.storage.from('images').upload(fileName, file);
+                    const { data, error } = await supabase.storage.from('images').upload(fileName, file);
                     if (error) throw error;
                     // Public URL 가져오기
-                    const { data: publicUrlData } = supabaseClient.storage.from('images').getPublicUrl(fileName);
+                    const { data: publicUrlData } = supabase.storage.from('images').getPublicUrl(fileName);
                     input_img_url = publicUrlData.publicUrl;
                 }
 
@@ -491,16 +493,16 @@
                             if(oldPath) {
                                 // URL 디코딩 필요할 수 있음
                                 const decodedPath = decodeURIComponent(oldPath);
-                                await supabaseClient.storage.from('images').remove([decodedPath]);
+                                await supabase.storage.from('images').remove([decodedPath]);
                             }
                         } catch(e) { console.log("기존 이미지 삭제 실패/무시", e); }
                     }
                     
                     // 새 파일 업로드
                     const fileName = `feed/${Date.now()}_updated_${newFile.name}`;
-                    const { error } = await supabaseClient.storage.from('images').upload(fileName, newFile);
+                    const { error } = await supabase.storage.from('images').upload(fileName, newFile);
                     if (error) throw error;
-                    const { data: urlData } = supabaseClient.storage.from('images').getPublicUrl(fileName);
+                    const { data: urlData } = supabase.storage.from('images').getPublicUrl(fileName);
                     edit_img_url = urlData.publicUrl;
                 }
 
