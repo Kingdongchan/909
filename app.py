@@ -179,26 +179,12 @@ async def signup(request: Request):
     )
 
 
-
-#! 삭제 해도 괜찮을 것 같은데.
-# 테스트용 DB 생성 API
-# @app.post("/db_create")
-# async def db_create(data: MessageRequest, db: Session = Depends(get_db)):
-#     return {"result": "success", "message": f"'{data.message}' 잘 받았어요!"}
-
-# @app.get("/db_read")
-# async def db_read(db: Session = Depends(get_db)):
-#     feeds = db.query(Feed).all()
-#     return feeds
-
-
 @app.get("/map", response_class=HTMLResponse)
 async def map_page(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "kakao_key": os.getenv("KAKAO_RESTAPI")  #이 부분 추가 
     })
-
 
 
 # Kakao Maps API 키를 클라이언트에 제공하는 엔드포인트
@@ -268,22 +254,17 @@ async def get_shops(req: ShopsRequest):
 
 #!--------------------------------------------------------------------------------------------------sb
 
-# /test 입력 화면 렌더링
-@app.get("/test", response_class=HTMLResponse)
-async def test(request: Request):
-    return templates.TemplateResponse("test.html", {"request": request}) #지금 이 주소에서 이 test.html 화면을 보여줄게
-
-
 # /community 특정 장소의 커뮤니티 화면 렌더링
 @app.get("/community/{place_name}", response_class=HTMLResponse)
 async def community_page(request: Request, place_name: str, category: Optional[str] = None):
     return templates.TemplateResponse("community.html", { #지금 이 주소에서 이 community.html 화면을 보여줄게
         "request": request, 
         "place_name": place_name,
-        "category": category  #! 추가
     })
+# "category": category  (삭제 하려다가 둠)
 
-# [API] 게시글 작성 (Create)
+
+#* DB_생성[API] 게시글 작성 (Create)
 @app.post("/user_input")
 async def user_input(data: UserInput, db: Session = Depends(get_db)):
     print(f"제목: {data.title}, 내용: {data.content}, 이미지: {data.image_url}")
@@ -309,7 +290,7 @@ async def user_input(data: UserInput, db: Session = Depends(get_db)):
         "category_code": new_feed.category_code
     }
 
-# [API] 게시글 수정 (Update)
+#* DB_수정 [API] 게시글 수정 (Update)
 @app.patch("/feed/{feed_id}")
 async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_db)):
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
@@ -340,7 +321,7 @@ async def get_data(db: Session = Depends(get_db)):
     feeds = db.query(Feed).all()
     return feeds
 
-# 삭제 버튼
+#* DB_삭제 버튼
 @app.delete("/feed/{feed_id}")
 async def delete_feed(feed_id: int, db: Session = Depends(get_db)):
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
@@ -349,6 +330,9 @@ async def delete_feed(feed_id: int, db: Session = Depends(get_db)):
     db.delete(feed)
     db.commit()
     return {"result": "success"}
+
+
+
 
 # 스토리지 키 js로 보내는 용도
 @app.get("/community")
