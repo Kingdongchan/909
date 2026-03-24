@@ -137,13 +137,6 @@
         // 이 함수 내에서 Kakao Maps API 및 필요한 서비스(`services`)가 로드된 후,
         // `initializeNavigation()` 함수가 호출되어 검색 자동 완성 및 경로 관련 이벤트 리스너가 설정됩니다.
         connectKakaomap();
-        // [주석: 백엔드에서 넘겨준 카카오 API 키를 JS 변수로 저장]
-
-        const kakaoKey = "{{ kakao_key }}";
-        window.KAKAO_REST_API = kakaoKey;
-        connectKakaomap(); // 키를 먼저 세팅하고 호출!
-
-
     </script>
     <script>
         const penguinButton = document.getElementById('penguinButton');
@@ -152,7 +145,6 @@
         const penguinSpeech = document.getElementById('penguin-speech');
 
         const phrases = [
-            "우리 아델리 펭귄들은 하루에 십 리도 넘게 걸어. 너 러닝 한다며? 나랑 페이스 좀 맞겠는데?",
             "나도 같이 갈래. 껴줄 거야? 🐧",
             "나를 보고 싶으면 오월드로 와. 버드랜드에서 기다릴게",
             "오월드 입장료는 만 원 조금 넘는 수준이야. 나를 위해 그 정도 써줄 수 있지?",
@@ -160,7 +152,6 @@
             "내 눈가에 하얀 테두리 보이지? 이게 내 매력 포인트야. 아이라인 문신 아니라고.",
             "우린 사실 남극의 깡패로 유명해. 귀엽다고 얕보지 마!",
             "남극에선 돌멩이가 화폐야. 프로포즈할 때 예쁜 돌 주는 게 국룰이지.",
-            "너 신발 수집한다며? 나도 예쁜 조약돌 수집하는 게 취미야.",
             "내 키는 네 무릎 조금 넘으려나? 아담해서 더 귀엽지?",
             "바다에 들어갈 땐 동료 한 명을 먼저 밀어 넣어. 바다표범 있나 확인하려고. 미안하지만 생존이야!",
             "우린 물속에서 엄청나게 빨리 수영할 수 있어. 물찬 제비가 아니라 물찬 펭귄이지.",
