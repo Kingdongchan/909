@@ -16,6 +16,7 @@
     <title>PenPing</title>
     <link rel="icon" href="../static/image/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .penguin-button {
             background: none;
@@ -47,14 +48,17 @@
     <div class="map-layout">
         <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="profile-section">
-                <div class="avatar">
-                    <img src="/static/image/cha.jpg"> <!--static 안으로 바꿔야 한다고 함.-->
+            <div class="profile-section" style="justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="avatar">
+                        <img src="/static/image/cha.jpg"> <!--static 안으로 바꿔야 한다고 함.-->
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1rem;">대전 고 (Daejeon Go)</h3>
+                        <p style="font-size: 0.75rem; color: var(--text-muted)">대전 여행자</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 style="font-size: 1rem;">PenPing</h3>
-                    <p style="font-size: 0.75rem; color: var(--text-muted)">대전 여행자</p>
-                </div>
+                <button onclick="logout()" style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">로그아웃</button>
             </div>
 
             <div class="route-section">
@@ -288,6 +292,12 @@
             }, 4000); // Hide after 4 seconds
         });
     </script>
+    <script>
+        // Supabase 설정 전달
+        window.SUPABASE_URL = "{{ supabase_url }}";
+        window.SUPABASE_KEY = "{{ supabase_key }}";
+    </script>
+    <script src="/static/js/auth.js"></script>
 </body>
 </html>
 
