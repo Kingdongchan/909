@@ -5,6 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daejeon Map</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        .penguin-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            position: relative;
+            display: block; /* Ensures the button wraps the SVG correctly */
+        }
+
+        .penguin-waddle {
+            animation: waddle 0.8s ease-in-out;
+        }
+
+        @keyframes waddle {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-15deg);
+            }
+            75% {
+                transform: rotate(15deg);
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="map-layout">
@@ -79,6 +105,7 @@
 
             <!-- Helper Penguin Floating -->
             <div class="helper-penguin">
+                <button class="penguin-button" id="penguinButton">
                     <svg class="penguin-shadow transition-transform duration-500 group-hover:scale-105" width="118" height="137" viewBox="0 0 118 137" xmlns="http://www.w3.org/2000/svg">
                         <path d="M58.8 9.8C36.8 9.8 22.1 29.4 22.1 58.8c0 34.3 9.8 68.6 36.7 68.6s36.7-34.3 36.7-68.6c0-29.4-14.7-49-36.7-49z" fill="#111D21"/>
                         <path d="M58.8 29.4c-14.7 0-22.1 17.2-22.1 39.2 0 29.4 7.4 53.9 22.1 53.9s22.1-24.5 22.1-53.9c0-22.1-7.4-39.2-22.1-39.2z" fill="white"/>
@@ -91,10 +118,10 @@
                         <path d="M56.4 52.9l2.4 3.4 2.5-3.4" fill="#FF8C42" opacity="0.8"/>
                         <path d="M49 125c-7.4 0-9.8 4.9-7.4 7.4h9.8V125zm19.6 0c7.4 0 9.8 4.9 7.4 7.4H66.2V125z" fill="#2C2C2C"/>
                     </svg>
-                <div style="position: absolute; top: -3.5rem; right: 0; background: white; padding: 0.5rem 1rem; border-radius: 0.75rem; box-shadow: var(--shadow-md); white-space: nowrap">
-                    <p style="font-size: 0.875rem; font-weight: 500"></p>
+                </button>
+                <div id="penguin-speech-bubble" style="position: absolute; top: -3.5rem; right: 0; background: white; padding: 0.5rem 1rem; border-radius: 0.75rem; box-shadow: var(--shadow-md); white-space: nowrap; opacity: 0; transition: opacity 0.3s ease-in-out;">
+                    <p id="penguin-speech" style="font-size: 0.875rem; font-weight: 500"></p>
                 </div>
-                <div class="pulse-badge">🔥</div>
             </div>
         </main>
     </div>
@@ -111,5 +138,142 @@
         // `initializeNavigation()` 함수가 호출되어 검색 자동 완성 및 경로 관련 이벤트 리스너가 설정됩니다.
         connectKakaomap();
     </script>
+    <script>
+        const penguinButton = document.getElementById('penguinButton');
+        const penguinSvg = penguinButton.querySelector('svg');
+        const speechBubble = document.getElementById('penguin-speech-bubble');
+        const penguinSpeech = document.getElementById('penguin-speech');
+
+        const phrases = [
+            "우리 아델리 펭귄들은 하루에 십 리도 넘게 걸어. 너 러닝 한다며? 나랑 페이스 좀 맞겠는데?",
+            "나도 같이 갈래. 껴줄 거야? 🐧",
+            "나를 보고 싶으면 오월드로 와. 버드랜드에서 기다릴게",
+            "오월드 입장료는 만 원 조금 넘는 수준이야. 나를 위해 그 정도 써줄 수 있지?",
+            "내 이름 '아델리'는 프랑스 탐험가 부인 이름에서 따온 거야. 로맨틱하지?",
+            "내 눈가에 하얀 테두리 보이지? 이게 내 매력 포인트야. 아이라인 문신 아니라고.",
+            "우린 사실 남극의 깡패로 유명해. 귀엽다고 얕보지 마!",
+            "남극에선 돌멩이가 화폐야. 프로포즈할 때 예쁜 돌 주는 게 국룰이지.",
+            "너 신발 수집한다며? 나도 예쁜 조약돌 수집하는 게 취미야.",
+            "내 키는 네 무릎 조금 넘으려나? 아담해서 더 귀엽지?",
+            "바다에 들어갈 땐 동료 한 명을 먼저 밀어 넣어. 바다표범 있나 확인하려고. 미안하지만 생존이야!",
+            "우린 물속에서 엄청나게 빨리 수영할 수 있어. 물찬 제비가 아니라 물찬 펭귄이지.",
+            "우리 깃털은 엄청나게 빽빽해. 방수 패딩 저리가라 수준이야.",
+            "나 사실 턱시도 입고 있는 거야. 매일이 파티거든.",
+            "물속에서 점프해서 얼음 위로 올라올 땐 네 키보다 높게 뛸 수도 있어.",
+            "아델리 펭귄은 남극에서 제일 잘나가는 종족이야. 대전에서도 내가 짱이지.",
+            "내 부리는 끝이 살짝 굽어 있어. 크릴새우 잡아먹기 딱 좋지.",
+            "우리 아기들은 털갈이 전엔 회색 솜뭉치 같아. 진짜 심장 폭행범이야.",
+            "내 고향은 남극이지만, 대전 공기도 나름 적응 중이야.",
+            "오월드 오면 나랑 눈 마주치기 놀이하자. 내가 이길걸?",
+            "우린 잠잘 때 서서 자기도 해. 신기하지?",
+            "펭귄은 새지만 날지 못해. 대신 바다에서 날아다녀!",
+            "내 꼬리는 생각보다 짧고 귀여워. 뒤태 보면 반할걸?",
+            "우린 영하 수십 도에서도 견딜 수 있어. 대전 겨울은 껌이지.",
+            "펭귄들마다 울음소리가 다 달라. 난 네 목소리 금방 알아챌 수 있어.",
+            "크릴새우는 내 소울푸드야. 네가 만든 요리도 궁금하긴 하다.",
+            "우린 단체 생활을 좋아해. 혼자 있으면 외롭거든.",
+            "내 발가락은 세 개야. 뒤뚱거리는 거 비웃지 마, 이게 최선이야.",
+            "펭귄의 배가 하얀 건 밑에서 보는 포식자한테 구름처럼 보이려고 그러는 거야.",
+            "등이 검은 건 위에서 보는 포식자한테 깊은 바다처럼 보이려고!",
+            "나 사실 미각이 좀 둔해. 신맛이랑 짠맛만 겨우 느껴.",
+            "그래도 네 정성은 느낄 수 있어. 오월드 올 때 빈손으로 오지 마!",
+            "우린 매년 깃털을 몽땅 갈아치워. 새 옷 입는 기분이지.",
+            "남극엔 북극곰이 안 살아. 걔네 무서운데 다행이지?",
+            "우린 바닷물을 마셔도 돼. 소금기를 걸러내는 특수 기관이 있거든.",
+            "아델리 펭귄은 호기심이 진짜 많아. 네 스마트폰도 쪼아볼지 몰라.",
+            "우린 사랑꾼이야. 한 번 짝을 맺으면 정말 오래가거든.",
+            "남극의 여름은 해가 지지 않아. 밤새 놀 수 있지.",
+            "나 보고 싶어서 사파리만 가지 말고 버드랜드 꼭 들러줘.",
+            "버드랜드 공기 쾌적해. 데이트 코스로 딱이지.",
+            "내 발은 생각보다 따뜻해. 혈액순환이 장난 아니거든.",
+            "우리 조상은 사람 키만큼 컸대. 지금은 귀여워졌지만.",
+            "펭귄도 무릎이 있어. 사실 투명 의자 자세로 서 있는 거야.",
+            "내 날개는 '플리퍼'라고 불러. 물속에서 쓰는 노지.",
+            "우린 배로 미끄러지는 거 좋아해. 썰매 타는 기분이야.",
+            "오월드 버드랜드는 아침 일찍 문을 열어. 부지런히 와!",
+            "나 사실 수영할 때 눈 안 감아. 투명한 눈꺼풀이 보호해 주거든.",
+            "펭귄 중에 아델리가 제일 성격 있는 거 알지? 나 성깔 있다!",
+            "내 심장은 아주 빠르게 뛰어. 수영할 땐 더 빨라지지.",
+            "남극의 얼음 위를 걸을 땐 미끄러지지 않게 발톱을 세워.",
+            "우린 집 지을 때 돌을 하나하나 정성껏 쌓아.",
+            "가끔 옆집 돌을 몰래 훔쳐오는 친구도 있어. 남극판 좀도둑이지.",
+            "우리 수명은 길면 수십 년 정도야. 오래오래 친구 하자.",
+            "펭귄은 사회성이 좋아서 서로 소통을 많이 해.",
+            "내 털은 기름기로 코팅되어 있어. 물이 닿아도 안 젖어.",
+            "우린 물속에서 숨을 꽤 오래 참을 수 있어.",
+            "바닷속에선 내 등이 보호색이 되어줘.",
+            "아델리 펭귄은 남극 생태계의 아주 중요한 역할을 해.",
+            "내 걸음 소리 들어본 적 있어? 토닥토닥 소리가 나.",
+            "우린 알을 발 위에 올려서 체온으로 정성껏 키워.",
+            "찬바람이 불면 펭귄들끼리 서로 몸을 맞대고 버텨. 이걸 '허들링'이라고 해.",
+            "허들링 할 때는 안쪽이랑 바깥쪽 펭귄들이 계속 위치를 바꿔. 공평하지?",
+            "우린 눈 위에서 잠자는 것도 좋아해.",
+            "물고기를 잡으면 머리부터 삼켜야 해. 그래야 비늘이 안 걸려.",
+            "내 날개는 뼈가 통째로 굳어 있어. 그래서 힘차게 물을 저을 수 있지.",
+            "남극 얼음이 녹으면 우리 집이 사라져. 환경 보호 좀 해줄래?",
+            "오월드 오면 내 이름 한 번 불러봐. 뒤돌아볼지도 몰라.",
+            "가끔은 펭귄도 멍하니 바다를 봐. 무슨 생각 하냐고? 크릴새우 생각!",
+            "내 깃털 색은 햇빛을 흡수하기 좋은 검은색이야.",
+            "우린 냄새로 서로를 구분하기도 해.",
+            "펭귄은 육지보다 물속에서 훨씬 자유로워.",
+            "내 발바닥은 거칠거칠해서 얼음 위에서 잘 안 미끄러져.",
+            "우린 단체로 이동할 때 줄을 지어 가는 걸 좋아해.",
+            "아델리 펭귄은 남극의 신사라는 별명이 있어. 매너는 좀 부족하지만.",
+            "내 눈은 물속에서도 아주 잘 보여.",
+            "우린 번식기가 되면 고향으로 돌아가는 습성이 있어.",
+            "펭귄도 스트레스 받으면 털이 빠질 수 있어. 그러니 사랑해 줘.",
+            "내 꼬리는 방향타 역할을 해. 수영할 때 요긴하지.",
+            "오월드 야간개장 때 나 보면 조명 덕분에 더 뽀샤시해.",
+            "내 꿈은 언젠가 전 세계 바다를 다 누비는 거야.",
+            "너 공부하느라 힘들지? 내가 뒤뚱거리는 거 보고 힐링해.",
+            "펭귄은 '신사'라고 불리지만, 먹을 거 앞에서는 얄짤없어.",
+            "내 MBTI는 아마 완전 외향적인 타입일 거야.",
+            "마지막 TMI! 입장료 아깝지 않게 내가 재롱 많이 피워줄게. 오월드에서 봐!",
+            "나랑 사진 찍을 때 매너 지켜주는 거 잊지 마.",
+            "대전 오면 성심당만 가지 말고 나도 보러 와.",
+            "내 털은 만져보면 생각보다 단단하고 빳빳해.",
+            "우린 빙하 위에서 미끄럼 타는 게 제일 재밌어.",
+            "남극의 눈은 아주 깨끗해서 가끔 먹기도 해.",
+            "펭귄은 무리를 지어 사냥하면 더 효율적이야.",
+            "내 부리 안쪽엔 가시 같은 게 있어서 물고기를 놓치지 않아.",
+            "우린 추울 때 날개 아래에 부리를 파묻고 자.",
+            "펭귄의 귀는 깃털에 가려져서 안 보이지만 잘 들어.",
+            "내 목소리는 생각보다 우렁차서 깜짝 놀랄걸?",
+            "가끔은 사람처럼 앉아서 쉬기도 해.",
+            "오월드 버드랜드 펭귄들 중에서 내가 제일 귀여운 건 비밀이야.",
+            "나랑 눈 마주치면 복이 온다는 전설이 있어. 내가 방금 지어냈어!",
+            "이제 다 읽었으면 진짜 오월드 올 거지? 펭귄은 거짓말 안 좋아해!"
+        ];
+
+        let speechTimeout;
+
+        penguinButton.addEventListener('click', () => {
+            // --- Animation Logic ---
+            if (!penguinSvg.classList.contains('penguin-waddle')) {
+                penguinSvg.classList.add('penguin-waddle');
+                penguinSvg.addEventListener('animationend', () => {
+                    penguinSvg.classList.remove('penguin-waddle');
+                }, { once: true });
+            }
+
+            // --- Speech Bubble Logic ---
+            // 1. Select a random phrase
+            const randomIndex = Math.floor(Math.random() * phrases.length);
+            const randomPhrase = phrases[randomIndex];
+            
+            // 2. Update the speech bubble content
+            penguinSpeech.textContent = randomPhrase;
+
+            // 3. Make the bubble visible
+            speechBubble.style.opacity = '1';
+
+            // 4. Hide the bubble after a few seconds
+            clearTimeout(speechTimeout); // Clear any existing timer
+            speechTimeout = setTimeout(() => {
+                speechBubble.style.opacity = '0';
+            }, 4000); // Hide after 4 seconds
+        });
+    </script>
 </body>
 </html>
+
