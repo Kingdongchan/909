@@ -333,6 +333,7 @@ async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_
         "category_code" : feed.category_code
     }
 
+# GET [/get-data] - DB 싹 다 긁어서 반환(보냄)
 # [API] 게시글 목록 조회 (Read)
 @app.get("/get_data")
 async def get_data(db: Session = Depends(get_db)):
