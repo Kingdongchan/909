@@ -1,5 +1,7 @@
-import { supabase } from './supabase.js' // supabase.js 불러옴 
-
+const supabase = window.supabase.createClient(  // ← 이걸로 교체
+    window.SUPABASE_URL,
+    window.SUPABASE_KEY
+);
         const input_file = document.querySelector('#input-file'); // 이미지용 input
         const input_file_add = document.querySelector('#input-file-add'); // 추가 버튼
 
@@ -66,25 +68,25 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
         const feed_div = document.getElementById('feed-div'); //피드 추가할 영역
         const write_div_modal = document.getElementById('write-div-modal'); //
 
-//?  DOM : html을 읽어서 js가 건들 수 있는 객체로 변한것
-// -> 사용 여부 확인 필요
-        // --- [초기화] DOM 로드 시 로그인 체크 및 데이터 로딩 ---
-        // window.addEventListener('DOMContentLoaded', async () => {
+// //?  DOM : html을 읽어서 js가 건들 수 있는 객체로 변한것
+// // -> 사용 여부 확인 필요
+// //         --- [초기화] DOM 로드 시 로그인 체크 및 데이터 로딩 ---
+//         window.addEventListener('DOMContentLoaded', async () => {
+// // localStorage 대신 supabase에게 직접 물어봅니다.
+//         const { data: { user } } = await supabase.auth.getUser();
 
-        //     // 로그인 안 한 사람 차단
-        //     const storedUser = localStorage.getItem('login_user_id');
-        //     if (!storedUser) {
-        //         alert("로그인이 필요합니다."); 
-        //         window.location.href = "/"; // 로그인 페이지 리다이렉트
-        //         return;
-        //     }
+//             if (!user) {
+//                 alert("로그인이 필요합니다."); 
+//                 window.location.href = "/"; // 로그인 페이지로 보냄
+//                 return;
+//             }
 
-        //     login_user_id = storedUser;
-        //     console.log("Logged in user:", login_user_id);
+//             // 로그인 성공했다면 ID 저장
+//             login_user_id = user.id;
+//             console.log("Logged in user:", login_user_id);
 
-        //     // 전체 피드 불러오기
-        //     await fetchAllFeeds();
-        // });
+//             await fetchAllFeeds();
+//         });
 
 
         //* GET [/get-data]
@@ -169,6 +171,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
         }); 
         // 저장 버튼 클릭
         const btn_write_save = document.getElementById('btn-write-save')
+            console.log("저장 버튼 클릭됨!")
             btn_write_save.addEventListener('click', async () => {
             const title = document.getElementById('input_title').value;
             const content = document.getElementById('input_content').value;
@@ -176,6 +179,16 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
             const file = fileInput.files[0];
             if(!title || !content) return alert("제목과 내용을 입력하세요.");  //제목 또는 내용이 없으면 안내 메시지
 
+
+            const { data: { user }, error } = await supabase.auth.getUser();
+            console.log("user:", data);
+            console.log("error:", error);
+
+            // 2. 유저가 없으면(로그인 안 됨) 중단
+            if (error || !user) {
+                alert("로그인이 필요합니다!");
+                return;
+            }
 
 
             const login_user_id = user.id; // auth.js에 있는데 supabase.js의 도움을 받아 UUID 데려옴
