@@ -70,7 +70,7 @@ class Feed(Base):
 class Like(Base):
     __tablename__ = 'likes'
     id = Column(BigInteger, primary_key=True, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('profiles.id'), nullable=False)
+    user_id = Column(UUID(as_uuid=True), nullable=False)  # FK 제거
     feed_id = Column(BigInteger, ForeignKey('feeds.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     __table_args__ = (UniqueConstraint('user_id', 'feed_id', name='unique_user_feed_like'),)
@@ -384,9 +384,8 @@ async def create_comment(data: CommentInput, db: Session = Depends(get_db)):
 # [API] 특정 게시글의 댓글 목록 조회
 @app.get("/comments/{feed_id}")
 async def get_comments(feed_id: int, db: Session = Depends(get_db)):
-    # Comment와 Profile을 조인하여 닉네임까지 가져오기
     results = db.query(Comment, Profile.nickname)\
-        .join(Profile, Comment.user_id == Profile.id)\
+        .outerjoin(Profile, Comment.user_id == Profile.id)\
         .filter(Comment.feed_id == feed_id)\
         .order_by(Comment.created_at.asc())\
         .all()
@@ -399,9 +398,11 @@ async def get_comments(feed_id: int, db: Session = Depends(get_db)):
             "user_id": str(comment.user_id),
             "content": comment.content,
             "created_at": comment.created_at,
-            "nickname": nickname
+            "nickname": nickname or "익명"  # profiles 없으면 익명
         })
     return comments_list
+#join → outerjoin 으로 바꾸면 profiles에 없는 유저 댓글도 다 나와요!
+
 
 # [API] 댓글 삭제
 @app.delete("/comments/{comment_id}")
