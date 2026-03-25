@@ -26,31 +26,21 @@ return data;
 }
 
 
-// 회원가입 함수
+// 회원가입 함수  (플랫폼으로 로그인된 내역을 가져다가 DB-profiles에 넣음)
 async function signup(email, password, nickname) {
 // 1단계: supabaseClient Auth 회원가입
 const { data: authData, error: authError } = await supabaseClient.auth.signUp({
     email: email,
-    password: password
+    password: password,
+    options: {
+        data: { nickname: nickname } // 트리거가 사용할 닉네임 데이터 전달  (SQL Editor에 트리거 추가)
+    }
 });
 
 if (authError) {
     throw authError;
 }
 
-
-// 2단계: profiles 테이블에 추가
-const { error: profileError } = await supabaseClient
-    .from('profiles')
-    .insert({
-    id: authData.user.id,
-    email: email,
-    nickname: nickname
-    });
-
-if (profileError) {
-    throw profileError;
-}
 
 if (authData.session) {
     document.cookie = 'sb-access-token=' + authData.session.access_token + '; path=/; max-age=3600; SameSite=Lax';
