@@ -173,6 +173,9 @@ async function runNavigation() {
     const origin = `${routeState.start.coords.getLng()},${routeState.start.coords.getLat()}`;
     const destination = `${routeState.end.coords.getLng()},${routeState.end.coords.getLat()}`;
 
+    setPointMarker(routeState.start.coords, 'START');
+    setPointMarker(routeState.end.coords, 'END');
+
     try {
 
         // ==============================
@@ -234,12 +237,12 @@ async function runNavigation() {
         // ==============================
 
         currentPolyline = new kakao.maps.Polyline({
-            path: linePath,
-            strokeWeight: 5,
-            strokeColor: '#FF0000',
-            strokeOpacity: 0.8,
-            strokeStyle: 'solid'
-        });
+                path: linePath,
+                strokeWeight: 6,        
+                strokeColor: '#FF0000',
+                strokeOpacity: 0.8,
+                strokeStyle: 'solid',
+            });
 
         currentPolyline.setMap(window.kakaoMap);
 
@@ -262,5 +265,98 @@ async function runNavigation() {
         alert("경로 생성 실패");
     } finally {
         isNavigating = false;
+    }
+}
+
+/**
+ * [전역 변수] 생성된 오버레이 객체를 저장합니다.
+ * 새로운 경로를 검색할 때 기존 핀을 지도에서 지우기 위해 참조가 필요합니다.
+ */
+let startOverlay = null; // 출발지 커스텀 오버레이 객체
+let endOverlay = null;   // 도착지 커스텀 오버레이 객체
+
+/**
+ * [애니메이션 설정] 말풍선이 위아래로 움직이는 효과를 정의합니다.
+ * HTML 헤더(head)에 스타일 태그를 주입하여 전역 CSS 클래스를 생성합니다.
+ */
+const style = document.createElement('style');
+style.textContent = `
+    /* bobbing이라는 이름의 애니메이션 정의 */
+    @keyframes bobbing {
+        0%, 100% { transform: translateY(0); }    /* 시작과 끝은 제자리 */
+        50% { transform: translateY(-8px); }     /* 중간(0.6초)에 위로 6px 이동 */
+    }
+    /* 이 클래스를 가진 요소는 1.2초마다 무한히 둥실둥실 움직임 */
+    .bobbing-label {
+        animation: bobbing 1.2s ease-in-out infinite;
+    }
+`;
+document.head.appendChild(style);
+
+/**
+ * [메인 함수] 특정 좌표에 출발/도착 핀을 꽂습니다.
+ * @param {kakao.maps.LatLng} position - 핀이 꽂힐 카카오맵 좌표 객체
+ * @param {string} type - 'START' 또는 'END' 구분값
+ */
+function setPointMarker(position, type) {
+    const isStart = type === 'START';
+    const label = isStart ? '출발지' : '도착지';
+    const bgColor = isStart ? '#3b82f6' : '#ec4899'; 
+
+    const content = document.createElement('div');
+    // ⭐ [수정] 1. 다른 마커나 선보다 항상 위에 있도록 가장 높은 우선순위(z-index) 부여
+    content.style.cssText = 'display: flex; flex-direction: column; align-items: center; white-space: nowrap; z-index: 9999;';
+    
+    content.innerHTML = `
+        <div class="bobbing-label" style="
+            background: ${bgColor};
+            color: white;
+            padding: 6px 16px;           /* 안쪽 여백을 늘려 말풍선 크기 키움 */
+            border-radius: 20px;         /* 크기에 맞게 모서리를 더 둥글게 */
+            font-size: 14px;             /* 글자 크기 키움 */
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); /* 그림자도 크기에 맞춰 입체감 강화 */
+            position: relative;
+            margin-bottom: 10px;         /* 핀과의 간격을 살짝 늘림 */
+        ">
+            ${label}
+            <div style="
+                position: absolute;
+                bottom: -8px;            /* 꼬리 위치 조정 */
+                left: 50%;
+                transform: translateX(-50%);
+                border-top: 9px solid ${bgColor}; /* 꼬리 크기 키움 */
+                border-left: 7px solid transparent;
+                border-right: 7px solid transparent;
+            "></div>
+        </div>
+
+        <div style="
+            width: 28px;                 /* 핀 너비 키움 */
+            height: 28px;                /* 핀 높이 키움 */
+            background: ${bgColor};
+            border-radius: 50% 50% 50% 0;
+            transform: rotate(-45deg);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.4); /* 그림자 강화 */
+        "></div>
+    `;
+
+    // 3. 카카오맵 커스텀 오버레이 객체 생성 및 지도 표시
+    const overlay = new kakao.maps.CustomOverlay({
+        map: window.kakaoMap,
+        position: position,
+        content: content,
+        yAnchor: 1,
+        // 카카오맵 객체 자체의 우선순위도 가장 높게 설정
+        zIndex: 9999 
+    });
+
+    // 4. 관리 및 교체 로직 (기존과 동일)
+    if (isStart) {
+        if (startOverlay) startOverlay.setMap(null); 
+        startOverlay = overlay;
+    } else {
+        if (endOverlay) endOverlay.setMap(null);
+        endOverlay = overlay;
     }
 }

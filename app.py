@@ -17,6 +17,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request, status  # ← stat
 from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse  # ← RedirectResponse 추가!
 from fastapi.templating import Jinja2Templates
 from typing import Optional 
+from datetime import datetime, timedelta
 # -----------------------------------------------------------------------------------
 
 # .env 로드 및 설정
@@ -272,7 +273,62 @@ async def get_shops(req: ShopsRequest):
         {"name": "더미 상점 3", "lat": 36.34, "lng": 127.37, "category": "여행지"},
     ]
 
+# 기상청 api 키 불러오는 부분
+@app.get("/api/weather")
+async def get_weather():
+    # 1. 기상청 API 설정 (환경변수에서 키 가져오기)
+    service_key = os.getenv("WEATHER_API_KEY")
+    nx, ny = 67, 134  # 대전 좌표
 
+    # 2. 기상청 기준 시간에 맞춘 base_date, base_time 계산 로직
+    def get_base_datetime():
+        now = datetime.now()
+        current_date = now.strftime("%Y%m%d")
+        current_hour = now.hour
+        
+        # 기상청 단기예보 발표 시간 (02:00부터 3시간 간격)
+        base_times = [2, 5, 8, 11, 14, 17, 20, 23]
+        
+        # 현재 시간보다 이전의 가장 가까운 발표 시각 찾기
+        # (기상청 데이터는 정각 + 약 10분 뒤에 API로 제공되므로 현재 시각 기준으로 안전하게 판단)
+        last_base_time = 23 # 기본값은 어제 23시
+        
+        # 00시~01시 사이라면 어제 날짜의 23시 데이터를 가져와야 함
+        if current_hour < 2:
+            base_date = (now - timedelta(days=1)).strftime("%Y%m%d")
+            base_time = "2300"
+        else:
+            base_date = current_date
+            # 현재 시간보다 작거나 같은 마지막 발표 시간 선택
+            available_times = [t for t in base_times if t <= current_hour]
+            last_base_time = available_times[-1]
+            base_time = f"{last_base_time:02d}00"
+            
+        return base_date, base_time
+
+    base_date, base_time = get_base_datetime()
+
+    # 3. 기상청 API 호출
+    url = "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst"
+    params = {
+        "serviceKey": service_key,
+        "numOfRows": 60,
+        "pageNo": 1,
+        "dataType": "JSON",
+        "base_date": base_date,
+        "base_time": base_time,
+        "nx": nx,
+        "ny": ny
+    }
+
+    try:
+        # 🧪 디버깅용 로그 (서버 터미널에서 확인 가능)
+        print(f"Weather Request -> Date: {base_date}, Time: {base_time}")
+        
+        response = requests.get(url, params=params)
+        return response.json()
+    except Exception as e:
+        return {"error": str(e)}
 
 
 #!--------------------------------------------------------------------------------------------------sb
