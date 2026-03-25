@@ -91,11 +91,12 @@
 
             <div class="stats-section">
                 <div class="avatar" style="width: 2.5rem; height: 2.5rem">
-                    <img src="/static/image/cha.jpg"> <!--static 안으로 바꿔야 한다고 함.-->
+                    <img src="/static/image/cha.jpg" alt="Penguin Mascot">
                 </div>
                 <div>
-                    <p style="font-size: 0.875rem; font-weight: 500;">월별 22°C 평일!</p>
-                    <p style="font-size: 0.75rem; color: var(--text-muted)">오늘 평일 날씨가 멋져요!<br>대전으로 탐험하러 갈까요? 👍</p>
+                    <p class="weather-title" style="font-size: 0.875rem; font-weight: 500;">날씨 로딩 중...</p>
+                    
+                    <p class="weather-desc" style="font-size: 0.75rem; color: var(--text-muted)">잠시만 기다려주세요!<br>대전 날씨를 확인하고 있어요. 🐧</p>
                 </div>
             </div>
         </aside>
@@ -298,6 +299,7 @@
         window.SUPABASE_KEY = "{{ supabase_key }}";
     </script>
     <script src="/static/js/auth.js"></script>
+    <script src="/static/js/weather.js"></script>
 </body>
 </html>
 
