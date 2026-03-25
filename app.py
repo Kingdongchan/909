@@ -167,6 +167,10 @@ class CommentInput(BaseModel):
 class CommentUpdate(BaseModel):
     content: str
 
+class LikeInput(BaseModel):
+    feed_id: int
+    user_id: str
+
 # ----------------------------------------------------------------------------------------
 
 # 라우트 (API)
@@ -337,10 +341,46 @@ async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_
 
 # GET [/get-data] - DB 싹 다 긁어서 반환(보냄)
 # [API] 게시글 목록 조회 (Read)
+# 댓글 수, 좋아요 수, 본인 좋아요 여부 포함
 @app.get("/get_data")
-async def get_data(db: Session = Depends(get_db)):
+async def get_data(user_id: Optional[str] = None, db: Session = Depends(get_db)):
     feeds = db.query(Feed).all()
-    return feeds
+    
+    result = []
+    for feed in feeds:
+        # 댓글 수
+        comment_count = db.query(Comment).filter(Comment.feed_id == feed.id).count()
+        # 좋아요 수
+        like_count = db.query(Like).filter(Like.feed_id == feed.id).count()
+        
+        # 내가 좋아요 눌렀는지 여부
+        is_liked = False
+        if user_id and user_id != "null" and user_id != "undefined":
+            try:
+                # user_id가 UUID 형식이므로 변환 시도
+                uid = uuid.UUID(user_id)
+                like_exists = db.query(Like).filter(Like.feed_id == feed.id, Like.user_id == uid).first()
+                if like_exists:
+                    is_liked = True
+            except:
+                pass
+
+        # Feed 객체를 dict로 변환 후 추가 정보 병합
+        feed_dict = {
+            "id": feed.id,
+            "user_id": str(feed.user_id),
+            "title": feed.title,
+            "content": feed.content,
+            "image_url": feed.image_url,
+            "category_code": feed.category_code,
+            "created_at": feed.created_at,
+            "comment_count": comment_count,
+            "like_count": like_count,
+            "is_liked": is_liked
+        }
+        result.append(feed_dict)
+        
+    return result
 
 #* DB_삭제 버튼
 @app.delete("/feed/{feed_id}")
@@ -357,6 +397,29 @@ async def delete_feed(feed_id: int, user_id: str, db: Session = Depends(get_db))
     db.commit()
     return {"result": "success"}
 
+# ------------------ 좋아요 (Like) API ------------------
+
+@app.post("/likes")
+async def add_like(data: LikeInput, db: Session = Depends(get_db)):
+    # 이미 좋아요 했는지 확인
+    existing_like = db.query(Like).filter(Like.feed_id == data.feed_id, Like.user_id == uuid.UUID(data.user_id)).first()
+    if existing_like:
+        return {"result": "already_liked"}
+    
+    new_like = Like(feed_id=data.feed_id, user_id=uuid.UUID(data.user_id))
+    db.add(new_like)
+    db.commit()
+    return {"result": "success"}
+
+@app.delete("/likes/{feed_id}")
+async def remove_like(feed_id: int, user_id: str, db: Session = Depends(get_db)):
+    like = db.query(Like).filter(Like.feed_id == feed_id, Like.user_id == uuid.UUID(user_id)).first()
+    if not like:
+        raise HTTPException(status_code=404, detail="좋아요 기록이 없습니다.")
+    
+    db.delete(like)
+    db.commit()
+    return {"result": "success"}
 # ------------------ 댓글 (Comments) API ------------------
 
 # [API] 댓글 작성

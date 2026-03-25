@@ -151,6 +151,21 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
                 : '';
 
 
+            // 좋아요 버튼 (채워진 하트 vs 빈 하트)
+            const heartIcon = feed.is_liked ? '❤️' : '🤍';
+            const likeColor = feed.is_liked ? '#ef4444' : '#64748b';
+            
+            // 좋아요 수 & 댓글 수
+            const likeCount = feed.like_count || 0;
+            const commentCount = feed.comment_count || 0;
+
+            // 버튼 HTML
+            const likeBtnHtml = `
+                <button onclick="event.stopPropagation(); toggleLike(${feed.id}, ${feed.is_liked})" style="background:none; border:none; cursor:pointer; font-size:1.1rem; color:${likeColor}; display:flex; align-items:center; gap:4px;">
+                    <span>${heartIcon}</span> <span>${likeCount}</span>
+                </button>
+            `;
+
             div.innerHTML = `
                 ${imgTag}
                 <div class="post-content">
@@ -162,6 +177,12 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
                     <div class="post-footer">
                         <div class="post-meta-left">
                             ${feed.category_code ? `<span class="badge">${feed.category_code}</span>` : ''}
+                            
+                            <!-- 좋아요 & 댓글 수 표시 -->
+                            <div style="display:flex; gap:12px; margin-left:8px; align-items:center;">
+                                ${likeBtnHtml}
+                                <span style="font-size:0.9rem; color:#64748b;">💬 ${commentCount}</span>
+                            </div>
                             <span class="post-date">${new Date(feed.created_at || Date.now()).toLocaleDateString()}</span>
                         </div>
                     </div>
@@ -473,3 +494,48 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
                 alert("오류 발생");
             }
         }
+
+        // 5. 좋아요 토글
+        window.toggleLike = async function(feedId, isLiked) {
+            if (!login_user_id) {
+                alert("로그인이 필요합니다.");
+                return;
+            }
+
+            try {
+                let res;
+                if (isLiked) {
+                    // 좋아요 취소 (DELETE)
+                    res = await fetch(`/likes/${feedId}?user_id=${login_user_id}`, { method: 'DELETE' });
+                } else {
+                    // 좋아요 추가 (POST)
+                    res = await fetch('/likes', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ feed_id: feedId, user_id: login_user_id })
+                    });
+                }
+
+                if (res.ok) {
+                    // 성공 시 목록만 다시 불러와서 UI 갱신 (서버 데이터 기준)
+                    fetchAllFeeds();
+                } else {
+                    alert("처리에 실패했습니다.");
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 6. 모달 닫기 로직 수정 (숨김 처리 강화)
+        function closeModal() {
+            write_div_modal.classList.remove('show'); // 오버레이 숨김
+            document.getElementById('write-section').classList.add('hidden');
+            document.getElementById('view-section').classList.add('hidden');
+            document.getElementById('edit-section').classList.add('hidden');
+        }
+
+        // 기존 닫기 버튼 이벤트 리스너가 closeModal 함수를 호출하도록 보장
+        document.querySelectorAll('.btn-close-modal').forEach(btn => {
+            btn.onclick = closeModal;
+        });
