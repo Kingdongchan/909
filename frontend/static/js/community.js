@@ -95,7 +95,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
         // 서버에서 전체 게시글(피드) 싹 다 불러오기
         async function fetchAllFeeds() {
             try {
-                const res = await fetch('/get_data');
+                const res = await fetch(`/get_data?user_id=${login_user_id || ''}`);
                 all_feed = await res.json(); 
                 renderFeedList();
             } catch (err) {
@@ -478,9 +478,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
         // 4. 댓글 삭제 (window 객체에 할당하여 HTML onclick에서 접근 가능하게 함)
         window.deleteComment = async function(commentId, feedId) {
             if (!confirm("댓글을 삭제하시겠습니까?")) return;
-
             try {
-                // user_id는 쿼리 파라미터로 전달 (보안상 좋진 않지만 현재 구조 유지)
                 const res = await fetch(`/comments/${commentId}?user_id=${login_user_id}`, {
                     method: 'DELETE'
                 });
@@ -539,3 +537,23 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
         document.querySelectorAll('.btn-close-modal').forEach(btn => {
             btn.onclick = closeModal;
         });
+
+
+
+        window.deleteFeed = async function(feedId) {
+            if (!confirm("삭제하시겠습니까?")) return;
+            try {
+                const res = await fetch(`/feed/${feedId}?user_id=${login_user_id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    all_feed = all_feed.filter(f => f.id !== feedId);
+                    renderFeedList();
+                    alert("삭제되었습니다.");
+                } else {
+                    const data = await res.json();
+                    alert("삭제 실패: " + (data.detail || "권한이 없습니다."));
+                }
+            } catch (err) {
+                console.error(err);
+                alert("삭제 중 오류가 발생했습니다.");
+            }
+        }
