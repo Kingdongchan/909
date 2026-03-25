@@ -152,6 +152,7 @@ class UserInput(BaseModel):
     user_id: str # 작성자 ID (클라이언트에서 전달받음)
     image_url: Optional[str] = None # 이미지 URL (없을 수도 있음)
     category_code : Optional[str] = None
+    place_name: Optional[str] = None
 
 # 게시글 수정 요청 데이터 (PATCH)
 class FeedUpdate(BaseModel):
@@ -347,16 +348,17 @@ async def community_page(request: Request, place_name: str, category: Optional[s
 import uuid
 
 #* DB_생성[API] 게시글 작성 (Create)
-@app.post("/user_input")
+@app.post("/api/feed")
 async def user_input(data: UserInput, db: Session = Depends(get_db)):
-    print(f"제목: {data.title}, 내용: {data.content}, 이미지: {data.image_url}")
+    print(f"제목: {data.title}, 내용: {data.content}, 이미지: {data.image_url}, 장소: {data.place_name}")
     
     new_feed = Feed(          # Feed 모델에 값 담기
         title=data.title,
         content=data.content,
         user_id=uuid.UUID(data.user_id),
         image_url=data.image_url,
-        category_code=data.category_code
+        category_code=data.category_code,
+        place_name=data.place_name
     )
     
     db.add(new_feed)     # DB에 올리기
@@ -375,7 +377,7 @@ async def user_input(data: UserInput, db: Session = Depends(get_db)):
     }
 
 #* DB_수정 [API] 게시글 수정 (Update)
-@app.patch("/feed/{feed_id}")
+@app.patch("/api/feed/{feed_id}")
 async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_db)):
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     
@@ -401,7 +403,7 @@ async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_
 # GET [/get-data] - DB 싹 다 긁어서 반환(보냄)
 # [API] 게시글 목록 조회 (Read)
 # 댓글 수, 좋아요 수, 본인 좋아요 여부 포함
-@app.get("/get_data")
+@app.get("/api/feed")
 async def get_data(user_id: Optional[str] = None, db: Session = Depends(get_db)):
     feeds = db.query(Feed).all()
     
@@ -443,7 +445,7 @@ async def get_data(user_id: Optional[str] = None, db: Session = Depends(get_db))
     return result
 
 #* DB_삭제 버튼
-@app.delete("/feed/{feed_id}")
+@app.delete("/api/feed/{feed_id}")
 async def delete_feed(feed_id: int, user_id: str, db: Session = Depends(get_db)):
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
@@ -462,7 +464,7 @@ async def delete_feed(feed_id: int, user_id: str, db: Session = Depends(get_db))
 
 # ------------------ 좋아요 (Like) API ------------------
 
-@app.post("/likes")
+@app.post("/api/likes")
 async def add_like(data: LikeInput, db: Session = Depends(get_db)):
     # 이미 좋아요 했는지 확인
     existing_like = db.query(Like).filter(Like.feed_id == data.feed_id, Like.user_id == uuid.UUID(data.user_id)).first()
@@ -474,7 +476,7 @@ async def add_like(data: LikeInput, db: Session = Depends(get_db)):
     db.commit()
     return {"result": "success"}
 
-@app.delete("/likes/{feed_id}")
+@app.delete("/api/likes/{feed_id}")
 async def remove_like(feed_id: int, user_id: str, db: Session = Depends(get_db)):
     like = db.query(Like).filter(Like.feed_id == feed_id, Like.user_id == uuid.UUID(user_id)).first()
     if not like:
@@ -489,7 +491,7 @@ async def remove_like(feed_id: int, user_id: str, db: Session = Depends(get_db))
 
 
 # [API] 인기 장소 조회 (좋아요 많은 순)
-@app.get("/popular-places")
+@app.get("/api/popular-places")
 async def get_popular_places(db: Session = Depends(get_db)):
     # 1. Feeds와 Likes 조인
     # 2. place_name이 있는(null이 아닌) 피드만 필터링
@@ -514,7 +516,7 @@ async def get_popular_places(db: Session = Depends(get_db)):
 # ------------------ 댓글 (Comments) API ------------------
 
 # [API] 댓글 작성
-@app.post("/comments")
+@app.post("/api/comments")
 async def create_comment(data: CommentInput, db: Session = Depends(get_db)):
     new_comment = Comment(
         feed_id=data.feed_id,
@@ -536,7 +538,7 @@ async def create_comment(data: CommentInput, db: Session = Depends(get_db)):
     }
 
 # [API] 특정 게시글의 댓글 목록 조회
-@app.get("/comments/{feed_id}")
+@app.get("/api/comments/{feed_id}")
 async def get_comments(feed_id: int, db: Session = Depends(get_db)):
     results = db.query(Comment, Profile.nickname)\
         .outerjoin(Profile, Comment.user_id == Profile.id)\
@@ -559,7 +561,7 @@ async def get_comments(feed_id: int, db: Session = Depends(get_db)):
 
 
 # [API] 댓글 삭제
-@app.delete("/comments/{comment_id}")
+@app.delete("/api/comments/{comment_id}")
 async def delete_comment(comment_id: int, user_id: str, db: Session = Depends(get_db)):
     comment = db.query(Comment).filter(Comment.id == comment_id).first()
     if not comment:

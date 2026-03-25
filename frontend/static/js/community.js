@@ -114,18 +114,31 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
             }
         }
 
-        //* GET [/get-data]
+        //* GET [/api/feed]
         // 서버에서 전체 게시글(피드) 싹 다 불러오기
         async function fetchAllFeeds() {
             try {
-                // [수정] user_id 포함하여 좋아요 여부 확인
-                const res = await fetch(`/get_data?user_id=${login_user_id || ''}`);
-                all_feed = await res.json(); 
+                // [수정] 엔드포인트를 /api/feed로 변경 (RESTful 규격)
+                const res = await fetch(`/api/feed?user_id=${login_user_id || ''}`);
+                
+                if (!res.ok) {
+                    throw new Error(`서버 응답 오류 (URL: /api/feed, 상태 코드: ${res.status})`);
+                }
+
+                const data = await res.json();
+
+                // 데이터가 배열인지 확인하여 렌더링 오류 방지
+                if (!Array.isArray(data)) {
+                    console.error("수신된 데이터가 배열 형식이 아닙니다:", data);
+                    all_feed = [];
+                } else {
+                    all_feed = data;
+                }
+
                 renderFeedList();
-                console.log(currentPlaceName);
             } catch (err) {
                 console.error(err);
-                feed_div.innerHTML = "피드를 불러오는데 실패했습니다.";
+                feed_div.innerHTML = `<p style="text-align:center; padding: 2rem; color: #ef4444;">피드를 불러오는데 실패했습니다.<br><small>${err.message}</small></p>`;
             }
         }
 
@@ -276,8 +289,8 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
 
 
             try {
-                //* POST [/user_input] 서버로 게시글 입력 받은 데이터 전송 (POST)
-                const res = await fetch('/user_input', {
+                //* POST [/api/feed] 서버로 게시글 입력 받은 데이터 전송 (POST)
+                const res = await fetch('/api/feed', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -389,7 +402,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
                 }
 
                 // 2. 서버에 수정 요청 (PATCH)
-                const res = await fetch(`/feed/${selected_feed.id}`, {
+                const res = await fetch(`/api/feed/${selected_feed.id}`, {
                     method: 'PATCH',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
@@ -432,7 +445,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
             commentListDiv.innerHTML = '<p style="color:#94a3b8; font-size:0.875rem;">댓글을 불러오는 중...</p>';
 
             try {
-                const res = await fetch(`/comments/${feedId}`);
+                const res = await fetch(`/api/comments/${feedId}`);
                 if (!res.ok) throw new Error("댓글 조회 실패");
                 const comments = await res.json();
                 renderComments(comments);
@@ -490,7 +503,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
             if (!selected_feed) return;
 
             try {
-                const res = await fetch('/comments', {
+                const res = await fetch('/api/comments', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -518,7 +531,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
 
             try {
                 // user_id는 쿼리 파라미터로 전달 (보안상 좋진 않지만 현재 구조 유지)
-                const res = await fetch(`/comments/${commentId}?user_id=${login_user_id}`, {
+                const res = await fetch(`/api/comments/${commentId}?user_id=${login_user_id}`, {
                     method: 'DELETE'
                 });
                 if (res.ok) {
@@ -542,7 +555,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
             existingItems.forEach(el => el.remove());
 
             try {
-                const res = await fetch('/popular-places');
+                const res = await fetch('/api/popular-places');
                 if (!res.ok) throw new Error('인기 장소 조회 실패');
                 
                 const places = await res.json();
@@ -586,10 +599,10 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
                 let res;
                 if (isLiked) {
                     // 좋아요 취소 (DELETE)
-                    res = await fetch(`/likes/${feedId}?user_id=${login_user_id}`, { method: 'DELETE' });
+                    res = await fetch(`/api/likes/${feedId}?user_id=${login_user_id}`, { method: 'DELETE' });
                 } else {
                     // 좋아요 추가 (POST)
-                    res = await fetch('/likes', {
+                    res = await fetch('/api/likes', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ feed_id: feedId, user_id: login_user_id })
@@ -640,7 +653,7 @@ URL(publicUrl) + 다른 입력값(input 등) → DB 저장  */
         window.deleteFeed = async function(feedId) {
             if (!confirm("삭제하시겠습니까?")) return;
             try {
-                const res = await fetch(`/feed/${feedId}?user_id=${login_user_id}`, { method: 'DELETE' });
+                const res = await fetch(`/api/feed/${feedId}?user_id=${login_user_id}`, { method: 'DELETE' });
                 if (res.ok) {
                     all_feed = all_feed.filter(f => f.id !== feedId);
                     renderFeedList();
