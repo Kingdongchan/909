@@ -71,10 +71,18 @@ class Feed(Base):
 class Like(Base):
     __tablename__ = 'likes'
     id = Column(BigInteger, primary_key=True, index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('profiles.id'), nullable=False)
+    user_id = Column(UUID(as_uuid=True), nullable=False)  # FK 제거
     feed_id = Column(BigInteger, ForeignKey('feeds.id'), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     __table_args__ = (UniqueConstraint('user_id', 'feed_id', name='unique_user_feed_like'),)
+
+class Comment(Base):
+    __tablename__ = 'comments'
+    id = Column(BigInteger, primary_key=True, index=True)
+    feed_id = Column(BigInteger, ForeignKey('feeds.id'), nullable=False)
+    user_id = Column(UUID(as_uuid=True), nullable=False)  # FK 제거
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # ----------------------------------------------------------------------------------------
 
@@ -151,6 +159,19 @@ class FeedUpdate(BaseModel):
     image_url: Optional[str] = None
     category_code : Optional[str] = None
 
+# 댓글 작성 요청 데이터
+class CommentInput(BaseModel):
+    feed_id: int
+    user_id: str
+    content: str
+
+class CommentUpdate(BaseModel):
+    content: str
+
+class LikeInput(BaseModel):
+    feed_id: int
+    user_id: str
+
 # ----------------------------------------------------------------------------------------
 
 # 라우트 (API)
@@ -180,19 +201,6 @@ async def signup(request: Request):
     )
 
 
-
-#! 삭제 해도 괜찮을 것 같은데.
-# 테스트용 DB 생성 API
-# @app.post("/db_create")
-# async def db_create(data: MessageRequest, db: Session = Depends(get_db)):
-#     return {"result": "success", "message": f"'{data.message}' 잘 받았어요!"}
-
-# @app.get("/db_read")
-# async def db_read(db: Session = Depends(get_db)):
-#     feeds = db.query(Feed).all()
-#     return feeds
-
-
 @app.get("/map", response_class=HTMLResponse)
 async def map_page(request: Request):
     return templates.TemplateResponse("index.html", {
@@ -201,7 +209,6 @@ async def map_page(request: Request):
         "supabase_url": os.getenv("SUPABASE_URL"),
         "supabase_key": os.getenv("SUPABASE_ANON_KEY")
     })
-
 
 
 # Kakao Maps API 키를 클라이언트에 제공하는 엔드포인트
@@ -326,22 +333,19 @@ async def get_weather():
 
 #!--------------------------------------------------------------------------------------------------sb
 
-# /test 입력 화면 렌더링
-@app.get("/test", response_class=HTMLResponse)
-async def test(request: Request):
-    return templates.TemplateResponse("test.html", {"request": request}) #지금 이 주소에서 이 test.html 화면을 보여줄게
-
-
 # /community 특정 장소의 커뮤니티 화면 렌더링
 @app.get("/community/{place_name}", response_class=HTMLResponse)
 async def community_page(request: Request, place_name: str, category: Optional[str] = None):
     return templates.TemplateResponse("community.html", { #지금 이 주소에서 이 community.html 화면을 보여줄게
         "request": request, 
         "place_name": place_name,
-        "category": category  #! 추가
     })
+# "category": category  (삭제 하려다가 둠)
 
-# [API] 게시글 작성 (Create)
+
+import uuid
+
+#* DB_생성[API] 게시글 작성 (Create)
 @app.post("/user_input")
 async def user_input(data: UserInput, db: Session = Depends(get_db)):
     print(f"제목: {data.title}, 내용: {data.content}, 이미지: {data.image_url}")
@@ -349,7 +353,7 @@ async def user_input(data: UserInput, db: Session = Depends(get_db)):
     new_feed = Feed(          # Feed 모델에 값 담기
         title=data.title,
         content=data.content,
-        user_id=data.user_id,
+        user_id=uuid.UUID(data.user_id),
         image_url=data.image_url,
         category_code=data.category_code
     )
@@ -367,7 +371,7 @@ async def user_input(data: UserInput, db: Session = Depends(get_db)):
         "category_code": new_feed.category_code
     }
 
-# [API] 게시글 수정 (Update)
+#* DB_수정 [API] 게시글 수정 (Update)
 @app.patch("/feed/{feed_id}")
 async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_db)):
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
@@ -391,21 +395,151 @@ async def update_feed(feed_id: int, data: FeedUpdate, db: Session = Depends(get_
         "category_code" : feed.category_code
     }
 
+# GET [/get-data] - DB 싹 다 긁어서 반환(보냄)
 # [API] 게시글 목록 조회 (Read)
+# 댓글 수, 좋아요 수, 본인 좋아요 여부 포함
 @app.get("/get_data")
-async def get_data(db: Session = Depends(get_db)):
+async def get_data(user_id: Optional[str] = None, db: Session = Depends(get_db)):
     feeds = db.query(Feed).all()
-    return feeds
+    
+    result = []
+    for feed in feeds:
+        # 댓글 수
+        comment_count = db.query(Comment).filter(Comment.feed_id == feed.id).count()
+        # 좋아요 수
+        like_count = db.query(Like).filter(Like.feed_id == feed.id).count()
+        
+        # 내가 좋아요 눌렀는지 여부
+        is_liked = False
+        if user_id and user_id != "null" and user_id != "undefined":
+            try:
+                # user_id가 UUID 형식이므로 변환 시도
+                uid = uuid.UUID(user_id)
+                like_exists = db.query(Like).filter(Like.feed_id == feed.id, Like.user_id == uid).first()
+                if like_exists:
+                    is_liked = True
+            except:
+                pass
 
-# 삭제 버튼
+        # Feed 객체를 dict로 변환 후 추가 정보 병합
+        feed_dict = {
+            "id": feed.id,
+            "user_id": str(feed.user_id),
+            "title": feed.title,
+            "content": feed.content,
+            "image_url": feed.image_url,
+            "category_code": feed.category_code,
+            "created_at": feed.created_at,
+            "comment_count": comment_count,
+            "like_count": like_count,
+            "is_liked": is_liked
+        }
+        result.append(feed_dict)
+        
+    return result
+
+#* DB_삭제 버튼
 @app.delete("/feed/{feed_id}")
-async def delete_feed(feed_id: int, db: Session = Depends(get_db)):
+async def delete_feed(feed_id: int, user_id: str, db: Session = Depends(get_db)):
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
+    
+    # 본인 확인 로직 추가 (UUID 문자열 비교)
+    if str(feed.user_id) != user_id:
+        raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
+
     db.delete(feed)
     db.commit()
     return {"result": "success"}
+
+# ------------------ 좋아요 (Like) API ------------------
+
+@app.post("/likes")
+async def add_like(data: LikeInput, db: Session = Depends(get_db)):
+    # 이미 좋아요 했는지 확인
+    existing_like = db.query(Like).filter(Like.feed_id == data.feed_id, Like.user_id == uuid.UUID(data.user_id)).first()
+    if existing_like:
+        return {"result": "already_liked"}
+    
+    new_like = Like(feed_id=data.feed_id, user_id=uuid.UUID(data.user_id))
+    db.add(new_like)
+    db.commit()
+    return {"result": "success"}
+
+@app.delete("/likes/{feed_id}")
+async def remove_like(feed_id: int, user_id: str, db: Session = Depends(get_db)):
+    like = db.query(Like).filter(Like.feed_id == feed_id, Like.user_id == uuid.UUID(user_id)).first()
+    if not like:
+        raise HTTPException(status_code=404, detail="좋아요 기록이 없습니다.")
+    
+    db.delete(like)
+    db.commit()
+    return {"result": "success"}
+# ------------------ 댓글 (Comments) API ------------------
+
+# [API] 댓글 작성
+@app.post("/comments")
+async def create_comment(data: CommentInput, db: Session = Depends(get_db)):
+    new_comment = Comment(
+        feed_id=data.feed_id,
+        user_id=uuid.UUID(data.user_id),
+        content=data.content
+    )
+    db.add(new_comment)
+    db.commit()
+    db.refresh(new_comment)
+    
+    # 작성자 닉네임 조회
+    user = db.query(Profile).filter(Profile.id == new_comment.user_id).first()
+    return {
+        "id": new_comment.id,
+        "content": new_comment.content,
+        "user_id": str(new_comment.user_id),
+        "nickname": user.nickname if user else "Unknown",
+        "created_at": new_comment.created_at
+    }
+
+# [API] 특정 게시글의 댓글 목록 조회
+@app.get("/comments/{feed_id}")
+async def get_comments(feed_id: int, db: Session = Depends(get_db)):
+    results = db.query(Comment, Profile.nickname)\
+        .outerjoin(Profile, Comment.user_id == Profile.id)\
+        .filter(Comment.feed_id == feed_id)\
+        .order_by(Comment.created_at.asc())\
+        .all()
+    
+    comments_list = []
+    for comment, nickname in results:
+        comments_list.append({
+            "id": comment.id,
+            "feed_id": comment.feed_id,
+            "user_id": str(comment.user_id),
+            "content": comment.content,
+            "created_at": comment.created_at,
+            "nickname": nickname or "익명"  # profiles 없으면 익명
+        })
+    return comments_list
+#join → outerjoin 으로 바꾸면 profiles에 없는 유저 댓글도 다 나와요!
+
+
+# [API] 댓글 삭제
+@app.delete("/comments/{comment_id}")
+async def delete_comment(comment_id: int, user_id: str, db: Session = Depends(get_db)):
+    comment = db.query(Comment).filter(Comment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="댓글을 찾을 수 없습니다.")
+    if str(comment.user_id) != user_id:
+        raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
+    
+    db.delete(comment)
+    db.commit()
+    return {"result": "success"}
+
+
+
+
+
 
 # 스토리지 키 js로 보내는 용도
 @app.get("/community")
@@ -426,8 +560,13 @@ async def index_page(request: Request):
         "request": request,
         "kakao_key": os.getenv("KAKAO_RESTAPI")
     })
-#!--------------------------------------------------------------------------------------------------sb
 
+
+# 카테고리 js에서 보낸 요청 받기(라우터)
+# html을 랜더링하여 응답
+@app.get("/community")
+async def community(request: Request):
+    return templates.TemplateResponse("community.html")
 
 if __name__ == "__main__":
     import uvicorn
