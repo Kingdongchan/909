@@ -445,10 +445,13 @@ async def delete_feed(feed_id: int, user_id: str, db: Session = Depends(get_db))
     if not feed:
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
     
-    # 본인 확인 로직 추가 (UUID 문자열 비교)
     if str(feed.user_id) != user_id:
         raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
-
+    
+    # 피드 삭제 전 연관 데이터 먼저 삭제
+    db.query(Like).filter(Like.feed_id == feed_id).delete()
+    db.query(Comment).filter(Comment.feed_id == feed_id).delete()
+    
     db.delete(feed)
     db.commit()
     return {"result": "success"}
