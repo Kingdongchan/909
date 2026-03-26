@@ -11,7 +11,7 @@ async function updateWeatherUI() {
 
     try {
         // 2. [네트워크 요청] FastAPI 백엔드 엔드포인트에 날씨 데이터를 요청합니다.
-        const response = await fetch('/api/weather'); 
+        const response = await fetch('https://web-production-93c93.up.railway.app/api/weather')
         
         // 3. [응답 검증] 서버 응답이 실패(500, 404 등)했을 경우 즉시 에러를 발생시켜 catch 블록으로 이동합니다.
         if (!response.ok) {

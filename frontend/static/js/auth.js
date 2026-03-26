@@ -102,6 +102,7 @@ async function loginWithGoogle() {
 // OAuth 콜백 후 세션 확인 및 리다이렉트
 window.addEventListener('DOMContentLoaded', async () => {
     console.log('🔍 페이지 로드 - 세션 확인 시작');
+    await initSupabase();
     
     // 현재 세션 확인
     const { data: { session }, error } = await supabaseClient.auth.getSession();

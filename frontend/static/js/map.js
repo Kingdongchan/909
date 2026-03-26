@@ -12,7 +12,7 @@ let markersArray = [];
  */
 async function connectKakaomap() {
     try {
-        const response = await fetch('/api/kakaomap-key');
+        const response = await fetch('https://web-production-93c93.up.railway.app/api/kakaomap-key')
         if (!response.ok) {
             throw new Error('API 키를 가져오는 데 실패했습니다.');
         }
