@@ -237,7 +237,7 @@ async def map_page(request: Request, user_data: dict = Depends(require_login)):
     })
 
 
- @app.get("/api/config")
+@app.get("/api/config")
 async def get_config():
     return {
         "supabase_url": os.getenv("SUPABASE_URL"),
