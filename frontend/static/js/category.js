@@ -249,7 +249,7 @@ function pathShop(poiList) {
         var content = document.createElement('div');
         content.innerHTML = '🧊';
         content.style.cssText = [
-            'font-size: 50px',
+            'font-size: 30px',
             'cursor: pointer',
             'filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3))'
         ].join(';');

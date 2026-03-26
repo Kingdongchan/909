@@ -19,6 +19,9 @@ from fastapi.templating import Jinja2Templates
 from typing import Optional 
 from datetime import datetime, timedelta
 from sqlalchemy import desc
+import uvicorn
+
+
 # -----------------------------------------------------------------------------------
 
 # .env 로드 및 설정
@@ -133,6 +136,7 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  #다 허용
+    allow_credentials=True, #캐시 허용
     allow_methods=["*"],  #GET, POST, PUT, DELETE 허용
     allow_headers=["*"],  #헤더 정보(쿠키, 인증 토큰 등) 허용
 )
@@ -626,10 +630,7 @@ async def delete_comment(comment_id: int, user_id: str, db: Session = Depends(ge
     return {"result": "success"}
 
 
-
-
-
-
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=5909)
+    # Railway가 주는 PORT 번호를 읽고, 없으면 8000 사용
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
