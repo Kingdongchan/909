@@ -135,7 +135,7 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 # CORS 설정 - 다른 곳에서 데이터 요청 시 받아주는 애
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  #다 허용
+    allow_origins=["https://909-ed1.pages.dev"],  #다 허용
     allow_credentials=True, #캐시 허용
     allow_methods=["*"],  #GET, POST, PUT, DELETE 허용
     allow_headers=["*"],  #헤더 정보(쿠키, 인증 토큰 등) 허용
