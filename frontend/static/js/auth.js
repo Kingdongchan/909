@@ -64,7 +64,7 @@ async function logout() {
     await supabaseClient.auth.signOut();
     // 쿠키 삭제
     document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-    window.location.href = '/';
+    window.location.href = '/login';
 }
 
 // 현재 사용자 가져오기
@@ -132,7 +132,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 세션이 없는데 보호된 페이지(/map, /community 등)에 있으면 로그인 페이지(/)로 이동
         if (!isPublicPath) {
             console.log('🚀 로그인 페이지로 리다이렉트');
-            window.location.href = '/';
+            window.location.href = '/login';
         }
     }
 });
