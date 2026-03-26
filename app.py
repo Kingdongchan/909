@@ -30,6 +30,26 @@ DATABASE_URL = os.getenv("DB_URL")
 KAKAO_API_KEY = os.getenv("KAKAO_API_KEY")
 KAKAO_RESTAPI = os.getenv("KAKAO_RESTAPI") # env에 넣을거임 
 
+# Supabase 설정값 전역 변수화
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_ANON_KEY")
+BUCKET_NAME = "images"
+SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY")  # service_role 키로 변경
+
+def extract_storage_path(image_url: str) -> str | None:
+    if not image_url:
+        return None
+    try:
+        marker = f"/object/public/{BUCKET_NAME}/"
+        idx = image_url.find(marker)
+        if idx == -1:
+            return None
+        return image_url[idx + len(marker):]  # ← 이 줄이 빠진 거야
+    except Exception:
+        return None
+
+# --- [DB] SQLAlchemy 연결 설정 ---
+engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 10})
 
 # --- [DB] SQLAlchemy 연결 설정 ---
 engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 10})
@@ -444,20 +464,45 @@ async def get_data(user_id: Optional[str] = None, db: Session = Depends(get_db))
         
     return result
 
-#* DB_삭제 버튼
+# DB 삭제
 @app.delete("/api/feed/{feed_id}")
 async def delete_feed(feed_id: int, user_id: str, db: Session = Depends(get_db)):
     feed = db.query(Feed).filter(Feed.id == feed_id).first()
     if not feed:
         raise HTTPException(status_code=404, detail="게시글을 찾을 수 없습니다.")
-    
+
     if str(feed.user_id) != user_id:
         raise HTTPException(status_code=403, detail="삭제 권한이 없습니다.")
-    
-    # 피드 삭제 전 연관 데이터 먼저 삭제
+
+    # ✅ 스토리지 파일 삭제 실패 시 전체 중단
+# ✅ 스토리지 파일 삭제 실패 시 전체 중단
+    if feed.image_url:
+        storage_path = extract_storage_path(feed.image_url)
+        print(f"image_url: {feed.image_url}")
+        print(f"storage_path: {storage_path}")
+        if storage_path:
+            headers = {
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "apikey": SUPABASE_KEY,
+                "Content-Type": "application/json"
+            }
+            storage_res = requests.delete(
+                f"{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}",
+                headers=headers,
+                json={"prefixes": [storage_path]}
+            )
+            print(f"스토리지 삭제 응답: {storage_res.status_code}, {storage_res.text}")
+            
+            if storage_res.status_code not in [200, 204]:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"이미지 삭제에 실패했습니다(상태코드: {storage_res.status_code}). 피드 삭제가 취소되었습니다."
+                )
+
+    # 스토리지 삭제 성공 후 DB 삭제 진행
     db.query(Like).filter(Like.feed_id == feed_id).delete()
     db.query(Comment).filter(Comment.feed_id == feed_id).delete()
-    
+
     db.delete(feed)
     db.commit()
     return {"result": "success"}
@@ -494,11 +539,9 @@ async def remove_like(feed_id: int, user_id: str, db: Session = Depends(get_db))
 @app.get("/api/popular-places")
 async def get_popular_places(db: Session = Depends(get_db)):
     # 1. Feeds와 Likes 조인
-    # 2. place_name이 있는(null이 아닌) 피드만 필터링
-    # 3. feed_id 기준 좋아요 수 집계 (내림차순 정렬)
+    # 2. feed_id 기준 좋아요 수 집계 (내림차순 정렬)
     results = db.query(Feed.place_name, func.count(Like.id).label('like_count'))\
         .join(Like, Feed.id == Like.feed_id)\
-        .filter(Feed.place_name.isnot(None))\
         .group_by(Feed.id)\
         .order_by(desc('like_count'), Feed.created_at.asc())\
         .limit(5)\
@@ -508,7 +551,7 @@ async def get_popular_places(db: Session = Depends(get_db)):
     for idx, row in enumerate(results):
         response.append({
             "rank": f"{idx + 1:02d}",
-            "place_name": row.place_name,
+            "place_name": row.place_name if row.place_name else "null",
             "like_count": row.like_count
         })
     return response
