@@ -71,7 +71,7 @@ async function loginWithGoogle() {
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: 'http://localhost:5909/map'
+                redirectTo: 'https://web-production-93c93.up.railway.app'
             }
         });
         
@@ -132,7 +132,7 @@ window.loginWithKakao = async function() {
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'kakao',
             options: {
-                redirectTo: 'http://localhost:5909/map' 
+                redirectTo: 'https://web-production-93c93.up.railway.app' 
             }
         });
         if (error) throw error;
