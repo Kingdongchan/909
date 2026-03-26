@@ -111,7 +111,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (error) console.log('🔍 에러:', error);
     
     const path = window.location.pathname;
-    const isPublicPath = path === '/' || path === '/signup' || path === '/login.html'; // login.html 추가 (필요시)
+    const isPublicPath = path === '/' || path === '/signup' || path === '/login.html' || path === '/login';
     
     if (session) {
         console.log('✅ 로그인되어 있음!');
