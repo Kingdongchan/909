@@ -1,19 +1,12 @@
 // Supabase 클라이언트 초기화
 
-let supabaseClient;
-async function initSupabase() {
-    if (supabaseClient) return;
-    const config = await fetch('https://web-production-93c93.up.railway.app/api/config')
-        .then(res => res.json());
-    supabaseClient = window.supabase.createClient(
-        config.supabase_url,
-        config.supabase_key
-    );
-}
+const supabaseClient = window.supabase.createClient(
+    window.SUPABASE_URL,
+    window.SUPABASE_KEY
+);
 
 // 이메일 로그인 함수
 async function login(email, password) {
-    await initSupabase();
 const { data, error } = await supabaseClient.auth.signInWithPassword({
     email: email,
     password: password
@@ -35,7 +28,6 @@ return data;
 
 // 회원가입 함수  (플랫폼으로 로그인된 내역을 가져다가 DB-profiles에 넣음)
 async function signup(email, password, nickname) {
-    await initSupabase();
 // 1단계: supabaseClient Auth 회원가입
 const { data: authData, error: authError } = await supabaseClient.auth.signUp({
     email: email,
@@ -60,16 +52,14 @@ return authData;
 
 // 로그아웃 함수
 async function logout() {
-    await initSupabase();
     await supabaseClient.auth.signOut();
     // 쿠키 삭제
     document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-    window.location.href = '/login';
+    window.location.href = '/';
 }
 
 // 현재 사용자 가져오기
 async function getCurrentUser() {
-    await initSupabase();
 const { data: { user } } = await supabaseClient.auth.getUser();
 return user;
 }
@@ -77,12 +67,11 @@ return user;
 
 // 구글 로그인
 async function loginWithGoogle() {
-    await initSupabase();
     try {
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: 'https://909-ed1.pages.dev/map'
+                redirectTo: 'http://localhost:5909/map'
             }
         });
         
@@ -102,7 +91,6 @@ async function loginWithGoogle() {
 // OAuth 콜백 후 세션 확인 및 리다이렉트
 window.addEventListener('DOMContentLoaded', async () => {
     console.log('🔍 페이지 로드 - 세션 확인 시작');
-    await initSupabase();
     
     // 현재 세션 확인
     const { data: { session }, error } = await supabaseClient.auth.getSession();
@@ -111,7 +99,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (error) console.log('🔍 에러:', error);
     
     const path = window.location.pathname;
-    const isPublicPath = path === '/' || path === '/signup' || path === '/login.html' || path === '/login';
+    const isPublicPath = path === '/' || path === '/signup' || path === '/login.html'; // login.html 추가 (필요시)
     
     if (session) {
         console.log('✅ 로그인되어 있음!');
@@ -132,20 +120,19 @@ window.addEventListener('DOMContentLoaded', async () => {
         // 세션이 없는데 보호된 페이지(/map, /community 등)에 있으면 로그인 페이지(/)로 이동
         if (!isPublicPath) {
             console.log('🚀 로그인 페이지로 리다이렉트');
-            window.location.href = '/login';
+            window.location.href = '/';
         }
     }
 });
 
 // 이렇게 변경하면 HTML 어디서든 확실하게 인식합니다.
 window.loginWithKakao = async function() {
-    await initSupabase();
     console.log("🔗 카카오 로그인 버튼 클릭됨!");
     try {
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'kakao',
             options: {
-                redirectTo: 'https://909-ed1.pages.dev/map'
+                redirectTo: 'http://localhost:5909/map' 
             }
         });
         if (error) throw error;

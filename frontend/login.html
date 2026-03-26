@@ -15,8 +15,8 @@
     <meta property="og:site_name" content="PenPing">
 
     <title>PenPing</title>
-    <link rel="icon" href="./static/image/favicon.ico" type="image/x-icon">
-    <link rel="stylesheet" href="./static/css/styles.css">
+    <link rel="icon" href="../static/image/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/static/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -101,13 +101,9 @@
     </div>
 
     <script>
-    (async () => {
-      const config = await fetch('https://web-production-93c93.up.railway.app/api/config')
-        .then(res => res.json());
-      window.SUPABASE_URL = config.supabase_url;
-      window.SUPABASE_KEY = config.supabase_key;
-      window.KAKAO_KEY = config.kakao_key;
-    })();
+    // 환경변수 전달
+    window.SUPABASE_URL = "{{ supabase_url }}";
+    window.SUPABASE_KEY = "{{ supabase_key }}";
 </script>
 <script src="/static/js/auth.js"></script>
 <script>
