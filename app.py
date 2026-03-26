@@ -237,6 +237,14 @@ async def map_page(request: Request, user_data: dict = Depends(require_login)):
     })
 
 
+ @app.get("/api/config")
+async def get_config():
+    return {
+        "supabase_url": os.getenv("SUPABASE_URL"),
+        "supabase_key": os.getenv("SUPABASE_ANON_KEY"),
+        "kakao_key": os.getenv("KAKAO_API_KEY")
+    }
+
 # Kakao Maps API 키를 클라이언트에 제공하는 엔드포인트
 # 이 키는 map.js에서 Kakao 지도 SDK를 동적으로 로드하는 데 사용됩니다.
 @app.get("/api/kakaomap-key")

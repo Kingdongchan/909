@@ -1,12 +1,19 @@
 // Supabase 클라이언트 초기화
 
-const supabaseClient = window.supabase.createClient(
-    window.SUPABASE_URL,
-    window.SUPABASE_KEY
-);
+let supabaseClient;
+async function initSupabase() {
+    if (supabaseClient) return;
+    const config = await fetch('https://web-production-93c93.up.railway.app/api/config')
+        .then(res => res.json());
+    supabaseClient = window.supabase.createClient(
+        config.supabase_url,
+        config.supabase_key
+    );
+}
 
 // 이메일 로그인 함수
 async function login(email, password) {
+    await initSupabase();
 const { data, error } = await supabaseClient.auth.signInWithPassword({
     email: email,
     password: password
@@ -28,6 +35,7 @@ return data;
 
 // 회원가입 함수  (플랫폼으로 로그인된 내역을 가져다가 DB-profiles에 넣음)
 async function signup(email, password, nickname) {
+    await initSupabase();
 // 1단계: supabaseClient Auth 회원가입
 const { data: authData, error: authError } = await supabaseClient.auth.signUp({
     email: email,
@@ -52,6 +60,7 @@ return authData;
 
 // 로그아웃 함수
 async function logout() {
+    await initSupabase();
     await supabaseClient.auth.signOut();
     // 쿠키 삭제
     document.cookie = 'sb-access-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
@@ -60,6 +69,7 @@ async function logout() {
 
 // 현재 사용자 가져오기
 async function getCurrentUser() {
+    await initSupabase();
 const { data: { user } } = await supabaseClient.auth.getUser();
 return user;
 }
@@ -67,11 +77,12 @@ return user;
 
 // 구글 로그인
 async function loginWithGoogle() {
+    await initSupabase();
     try {
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: 'http://localhost:5909/map'
+                redirectTo: 'https://909-ed1.pages.dev/map'
             }
         });
         
@@ -127,12 +138,13 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // 이렇게 변경하면 HTML 어디서든 확실하게 인식합니다.
 window.loginWithKakao = async function() {
+    await initSupabase();
     console.log("🔗 카카오 로그인 버튼 클릭됨!");
     try {
         const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'kakao',
             options: {
-                redirectTo: 'http://localhost:5909/map' 
+                redirectTo: 'https://909-ed1.pages.dev/map'
             }
         });
         if (error) throw error;

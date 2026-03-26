@@ -101,9 +101,13 @@
     </div>
 
     <script>
-    // 환경변수 전달
-    window.SUPABASE_URL = "{{ supabase_url }}";
-    window.SUPABASE_KEY = "{{ supabase_key }}";
+    (async () => {
+      const config = await fetch('https://web-production-93c93.up.railway.app/api/config')
+        .then(res => res.json());
+      window.SUPABASE_URL = config.supabase_url;
+      window.SUPABASE_KEY = config.supabase_key;
+      window.KAKAO_KEY = config.kakao_key;
+    })();
 </script>
 <script src="/static/js/auth.js"></script>
 <script>
