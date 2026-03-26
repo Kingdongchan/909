@@ -51,11 +51,11 @@
             <div class="profile-section" style="justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 1rem;">
                     <div class="avatar">
-                        <img src="/static/image/cha.jpg"> <!--static 안으로 바꿔야 한다고 함.-->
+                        <img src="/static/image/pengping.svg"> <!--static 안으로 바꿔야 한다고 함.-->
                     </div>
                     <div>
-                        <h3 style="font-size: 1rem;">대전 고 (Daejeon Go)</h3>
-                        <p style="font-size: 0.75rem; color: var(--text-muted)">대전 여행자</p>
+                        <h3 style="font-size: 1rem;">펭핑이</h3>
+                        <p style="font-size: 0.75rem; color: var(--text-muted)">대전 탐험가</p>
                     </div>
                 </div>
                 <button onclick="logout()" style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer; transition: all 0.2s;">로그아웃</button>
@@ -149,11 +149,10 @@
     window.SUPABASE_URL = "{{ supabase_url }}";
     window.SUPABASE_KEY = "{{ supabase_key }}";
     </script>
-    <script src="/static/js/auth.js"></script> <!--추가-->
+    <script src="/static/js/auth.js"></script>
     <script src="/static/js/map.js"></script>
     <script src="/static/js/category.js"></script>
     <script src="/static/js/navigation.js"></script>
-    <script src="/static/js/auth.js"></script>
     <script src="/static/js/weather.js"></script>
     <script>
         // Kakao Map 연결 함수를 직접 호출하여 초기화 과정을 시작합니다.
